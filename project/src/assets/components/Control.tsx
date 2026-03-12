@@ -1,9 +1,9 @@
 const motors = [
-  { name: "Motor 1 (Base)", angle: 0 },
-  { name: "Motor 2", angle: 0 },
-  { name: "Motor 3", angle: 0 },
-  { name: "Motor 4", angle: 0 },
-  { name: "Motor 5", angle: 0 },
+  { name: "Motor 1", angle: 180 },
+  { name: "Motor 2", angle: 180 },
+  { name: "Motor 3", angle: 180 },
+  { name: "Motor 4", angle: 180 },
+  { name: "Motor 5", angle: 180 },
 ]
 
 export default function Control() {
