@@ -1,17 +1,38 @@
-import LogAlert from "./assets/components/LogAlert";
+import { Routes, Route } from "react-router-dom"
+import Sidebar from "./sidebar"
+import LogAlert from "./assets/components/LogAlert"
+import DeepCamera from "./assets/components/DeepCamera"
+
+function Home() {
+  return (
+    <>
+      <div className="content"></div>
+      <LogAlert />
+    </>
+  )
+}
+
+function DeepCamPage() {
+  return (
+    <div className="content">
+      <DeepCamera />
+    </div>
+  )
+}
 
 function App() {
   return (
     <div className="layout">
 
-      <div className="content">
-        {/* พื้นที่ว่างสำหรับหน้า Dashboard */}
-      </div>
+      <Sidebar />
 
-      <LogAlert />
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="/deepcam" element={<DeepCamPage />} />
+      </Routes>
 
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
