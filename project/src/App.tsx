@@ -1,20 +1,23 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import Sidebar from "./sidebar"
 import LogAlert from "./assets/components/LogAlert"
+import Control from "./assets/components/Control"
 import DeepCamera from "./assets/components/DeepCamera"
 
 function Home() {
   return (
-    <>
-      <div className="content"></div>
-      <LogAlert />
-    </>
+    <div className="page-shell home-page">
+      <div className="home-layout">
+        <Control />
+        <LogAlert />
+      </div>
+    </div>
   )
 }
 
 function DeepCamPage() {
   return (
-    <div className="content">
+    <div className="page-shell">
       <DeepCamera />
     </div>
   )
@@ -23,14 +26,15 @@ function DeepCamPage() {
 function App() {
   return (
     <div className="layout">
-
       <Sidebar />
 
-      <Routes>
-        <Route path="/home" element={<Home />} />
-        <Route path="/deepcam" element={<DeepCamPage />} />
-      </Routes>
-
+      <main className="main-area">
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/deepcam" element={<DeepCamPage />} />
+        </Routes>
+      </main>
     </div>
   )
 }
