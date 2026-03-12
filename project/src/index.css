@@ -3,3 +3,103 @@
 .header {
   @apply bg-blue-300 text-black p-4;
 }
+
+body{
+  margin:0;
+  background:#e79a57;
+  font-family: 'Quicksand', sans-serif;
+}
+
+/* layout หลัก */
+
+.layout{
+  display:flex;
+  height:100vh;
+  padding:40px;
+  box-sizing:border-box;
+}
+
+/* พื้นที่ฝั่งซ้าย (dashboard area) */
+
+.content{
+  flex:1;
+}
+
+/* log alert card */
+.log-alert-card{
+  width:280px;
+  background:#d9d9d9;
+  border-radius:20px;
+  padding:15px;
+}
+
+/* header */
+
+.log-alert-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:600;
+  margin-bottom:12px;
+}
+
+/* log list */
+
+.log-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* log item */
+
+.log-item{
+  display:flex;
+  gap:10px;
+  background:#ea9b57;
+  padding:10px;
+  border-radius:12px;
+  align-items:center;
+}
+
+/* status dot */
+
+.log-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+}
+
+.green{
+  background:#2ecc71;
+}
+
+.red{
+  background:#e74c3c;
+}
+
+/* time */
+
+.log-time{
+  font-size:12px;
+  font-weight:600;
+}
+
+/* message */
+
+.log-message{
+  font-size:13px;
+}
+
+/* button */
+
+.view-all-btn{
+  margin-top:12px;
+  width:100%;
+  border:none;
+  padding:10px;
+  border-radius:12px;
+  background:#ea9b57;
+  cursor:pointer;
+  font-weight:600;
+}
