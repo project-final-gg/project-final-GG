@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Robot Arm Control</title>
+</head>
+
+<body>
+
+<h2>Robot Arm Control</h2>
+
+Base
+<input type="range" min="0" max="180" value="90" id="base">
+<span id="baseValue">90</span>
+<br><br>
+
+Shoulder
+<input type="range" min="0" max="180" value="90" id="shoulder">
+<span id="shoulderValue">90</span>
+<br><br>
+
+Elbow
+<input type="range" min="0" max="180" value="90" id="elbow">
+<span id="elbowValue">90</span>
+<br><br>
+
+Wrist
+<input type="range" min="0" max="180" value="90" id="wrist">
+<span id="wristValue">90</span>
+<br><br>
+
+Gripper
+<input type="range" min="0" max="180" value="90" id="gripper">
+<span id="gripperValue">90</span>
+
+<script>
+
+function setupSlider(id){
+
+    const slider = document.getElementById(id);
+    const value = document.getElementById(id+"Value");
+
+    let timer = null;
+
+    slider.addEventListener("input", function(){
+
+        value.innerText = slider.value;
+
+        clearTimeout(timer);
+
+        timer = setTimeout(()=>{
+
+            fetch("http://localhost:8000/update",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    joint:id,
+                    angle:parseInt(slider.value)
+                })
+            });
+
+        },100);
+
+    });
+
+}
+
+setupSlider("base");
+setupSlider("shoulder");
+setupSlider("elbow");
+setupSlider("wrist");
+setupSlider("gripper");
+
+</script>
+
+</body>
+</html>
