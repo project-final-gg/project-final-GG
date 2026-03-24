@@ -2,79 +2,120 @@
 <html>
 
 <head>
-<meta charset="UTF-8">
-<title>Robot Arm Control</title>
+    <meta charset="UTF-8">
+    <title>Robot Arm Control</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        .control {
+            margin-bottom: 20px;
+        }
+    </style>
+
 </head>
 
 <body>
 
-<h2>Robot Arm Control</h2>
+    <h2>🤖 Robot Arm Control</h2>
 
-Base
-<input type="range" min="0" max="180" value="90" id="base">
-<span id="baseValue">90</span>
-<br><br>
+    <div id="log"></div>
 
-Shoulder
-<input type="range" min="0" max="180" value="90" id="shoulder">
-<span id="shoulderValue">90</span>
-<br><br>
+    <!-- Controls -->
+    <div class="control">Base
+        <input type="range" min="0" max="180" value="90" id="base">
+        <span id="baseValue">90</span>
+    </div>
 
-Elbow
-<input type="range" min="0" max="180" value="90" id="elbow">
-<span id="elbowValue">90</span>
-<br><br>
+    <div class="control">Shoulder
+        <input type="range" min="0" max="180" value="90" id="shoulder">
+        <span id="shoulderValue">90</span>
+    </div>
 
-Wrist
-<input type="range" min="0" max="180" value="90" id="wrist">
-<span id="wristValue">90</span>
-<br><br>
+    <div class="control">Elbow
+        <input type="range" min="0" max="180" value="90" id="elbow">
+        <span id="elbowValue">90</span>
+    </div>
 
-Gripper
-<input type="range" min="0" max="180" value="90" id="gripper">
-<span id="gripperValue">90</span>
+    <div class="control">Wrist Vertical
+        <input type="range" min="0" max="180" value="90" id="wrist_v">
+        <span id="wrist_vValue">90</span>
+    </div>
 
-<script>
+    <div class="control">Wrist Rotate
+        <input type="range" min="0" max="180" value="90" id="wrist_r">
+        <span id="wrist_rValue">90</span>
+    </div>
 
-function setupSlider(id){
+    <div class="control">Gripper
+        <input type="range" min="0" max="90" value="45" id="gripper">
+        <span id="gripperValue">45</span>
+    </div>
 
-    const slider = document.getElementById(id);
-    const value = document.getElementById(id+"Value");
+    <script>
 
-    let timer = null;
+        // ===== debug log =====
+        function log(msg) {
+            const logDiv = document.getElementById("log");
+            logDiv.innerHTML = "<p>" + msg + "</p>" + logDiv.innerHTML;
+        }
 
-    slider.addEventListener("input", function(){
+        // ===== setup slider =====
+        function setupSlider(id) {
 
-        value.innerText = slider.value;
+            const slider = document.getElementById(id);
+            const value = document.getElementById(id + "Value");
 
-        clearTimeout(timer);
+            let timer = null;
 
-        timer = setTimeout(()=>{
+            slider.addEventListener("input", function () {
 
-            fetch("http://localhost:8000/update",{
-                method:"POST",
-                headers:{
-                    "Content-Type":"application/json"
-                },
-                body:JSON.stringify({
-                    joint:id,
-                    angle:parseInt(slider.value)
-                })
+                value.innerText = slider.value;
+
+                clearTimeout(timer);
+
+                // debounce กัน spam
+                timer = setTimeout(() => {
+
+                    const rawValue = parseInt(slider.value);
+
+                    const data = {
+                        joint: id,
+                        angle: id === "gripper" ? 90 - rawValue : rawValue
+                    };
+
+                    log("Sending: " + JSON.stringify(data));
+
+                    fetch("http://localhost:8000/update", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(data)
+                    })
+                        .then(res => res.json())
+                        .then(res => log("Response: " + JSON.stringify(res)))
+                        .catch(err => log("Error: " + err));
+
+                }, 100);
+
             });
 
-        },100);
+        }
 
-    });
+        // ===== init =====
+        setupSlider("base");
+        setupSlider("shoulder");
+        setupSlider("elbow");
+        setupSlider("wrist_v");
+        setupSlider("wrist_r");
+        setupSlider("gripper");
 
-}
-
-setupSlider("base");
-setupSlider("shoulder");
-setupSlider("elbow");
-setupSlider("wrist");
-setupSlider("gripper");
-
-</script>
+    </script>
 
 </body>
+
 </html>
