@@ -1,4 +1,12 @@
-export default function LogAlert() {
+type LogType = "info" | "success" | "error"
+
+interface LogItem {
+  time: string
+  messages: string[]
+  type: LogType
+}
+
+export default function LogAlert({ logs = [] }: { logs?: LogItem[] }) {
   return (
     <div className="log-alert-card">
       <div className="log-alert-header">
@@ -7,23 +15,33 @@ export default function LogAlert() {
       </div>
 
       <div className="log-list">
-        <div className="log-item success">
-          <span className="log-dot green"></span>
-          <div className="log-content">
-            <div className="log-time">09:56:32</div>
-            <div className="log-message">[INFO] Moving: Position 1 → Position 2</div>
-            <div className="log-message">[SUCCESS] Move completed: Position 1 → Position 2</div>
-          </div>
-        </div>
+        {logs.length === 0 && (
+          <div className="log-empty">No logs yet...</div>
+        )}
 
-        <div className="log-item error">
-          <span className="log-dot red"></span>
-          <div className="log-content">
-            <div className="log-time">09:54:44</div>
-            <div className="log-message">[INFO] Moved from Position 1 to Position 2</div>
-            <div className="log-message">[ERROR] Object not detected.</div>
+        {logs.map((log, index) => (
+          <div key={index} className={`log-item ${log.type}`}>
+            <span
+              className={`log-dot ${
+                log.type === "success"
+                  ? "green"
+                  : log.type === "error"
+                  ? "red"
+                  : "yellow"
+              }`}
+            ></span>
+
+            <div className="log-content">
+              <div className="log-time">{log.time}</div>
+
+              {log.messages.map((msg, i) => (
+                <div key={i} className="log-message">
+                  {msg}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
       <button className="view-all-btn">View All +</button>
