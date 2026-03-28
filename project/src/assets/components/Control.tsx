@@ -10,12 +10,12 @@ interface LogItem {
 }
 
 const motors = [
-  { name: "Position 1", angle: 90 },
-  { name: "Position 2", angle: 90 },
-  { name: "Position 3", angle: 90 },
-  { name: "Position 4", angle: 90 },
-  { name: "Position 5", angle: 90 },
-  { name: "Position 6", angle: 45 },
+  { name: "base", angle: 90 },
+  { name: "shoulder", angle: 90 },
+  { name: "elbow", angle: 90 },
+  { name: "wrist_v", angle: 90 },
+  { name: "wrist_r", angle: 90 },
+  { name: "gripper", angle: 45 },
 ]
 
 export default function Control() {
@@ -56,7 +56,7 @@ export default function Control() {
 
     const data = {
       joint: name,
-      angle: name === "Position 6" ? 90 - value : value,
+      angle: name === "gripper" ? 90 - value : value,
     }
 
     const time = getTime()
@@ -160,6 +160,7 @@ export default function Control() {
           </div>
         ))}
       </div>
+      <LogAlert logs={logs} />
     </div>
   )
 }
