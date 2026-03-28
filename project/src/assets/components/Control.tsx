@@ -56,7 +56,7 @@ export default function Control() {
 
     const data = {
       joint: name,
-      angle: name === "Position 6" ? 90 - value : value,
+      angle: name === "gripper" ? 90 - value : value,
     }
 
     const time = getTime()
@@ -160,6 +160,7 @@ export default function Control() {
           </div>
         ))}
       </div>
+      <LogAlert logs={logs} />
     </div>
   )
 }
