@@ -17,35 +17,33 @@ export default function Control() {
     }, {} as Record<string, number>)
   )
 
-  const timers = useRef<Record<string, any>>({})
-
   const handleChange = (name: string, value: number) => {
     setAngles(prev => ({
       ...prev,
       [name]: value,
     }))
+  }
 
-    clearTimeout(timers.current[name])
+  const sendData = (name: string) => {
+    const value = angles[name]
 
-    timers.current[name] = setTimeout(() => {
-      const data = {
-        joint: name,
-        angle: name === "Position 6" ? 90 - value : value,
-      }
+    const data = {
+      joint: name,
+      angle: name === "Position 6" ? 90 - value : value,
+    }
 
-      console.log("📤 Sending:", data)
+    console.log("📤 Sending:", data)
 
-      fetch("http://localhost:8000/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-        .then(res => res.json())
-        .then(res => console.log("📥 Response:", res))
-        .catch(err => console.error("❌ Error:", err))
-    }, 100)
+    fetch("http://localhost:8000/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    })
+      .then(res => res.json())
+      .then(res => console.log("📥 Response:", res))
+      .catch(err => console.error("❌ Error:", err))
   }
 
   return (
@@ -86,6 +84,8 @@ export default function Control() {
               onChange={(e) =>
                 handleChange(motor.name, Number(e.target.value))
               }
+              onMouseUp={() => sendData(motor.name)}
+              onTouchEnd={() => sendData(motor.name)}
               className="motor-slider"
             />
           </div>
