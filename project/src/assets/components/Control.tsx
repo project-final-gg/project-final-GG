@@ -1,12 +1,13 @@
 import { useState, useRef } from "react"
+import LogAlert from "./LogAlert"
 
 const motors = [
-  { name: "Position 1", angle: 90 },
-  { name: "Position 2", angle: 90 },
-  { name: "Position 3", angle: 90 },
-  { name: "Position 4", angle: 90 },
-  { name: "Position 5", angle: 90 },
-  { name: "Position 6", angle: 45 },
+  { name: "base", angle: 90 },
+  { name: "shoulder", angle: 90 },
+  { name: "elbow", angle: 90 },
+  { name: "wrist_v", angle: 90 },
+  { name: "wrist_r", angle: 90 },
+  { name: "gripper", angle: 45 },
 ]
 
 export default function Control() {
@@ -34,7 +35,7 @@ export default function Control() {
 
     console.log("📤 Sending:", data)
 
-    fetch("http://localhost:8000/update", {
+    fetch("https://project-final-gg.onrender.com/update", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -79,7 +80,7 @@ export default function Control() {
             <input
               type="range"
               min={0}
-              max={motor.name === "Position 6" ? 90 : 180}
+              max={motor.name === "gripper" ? 90 : 180}
               value={angles[motor.name]}
               onChange={(e) =>
                 handleChange(motor.name, Number(e.target.value))
