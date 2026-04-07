@@ -1,14 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import Sidebar from "./sidebar"
-import LogAlert from "./assets/components/LogAlert"
-import Control from "./assets/components/Control"
 import DeepCamera from "./assets/components/DeepCamera"
+import LogAlert from "./assets/components/LogAlert"
 
 function Home() {
   return (
     <div className="page-shell home-page">
       <div className="home-layout">
-        <Control />
         <LogAlert />
       </div>
     </div>
