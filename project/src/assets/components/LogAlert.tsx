@@ -15,6 +15,7 @@ export default function LogAlert() {
   const [logs, setLogs] = useState<LogItem[]>([])
   const [open, setOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
+  const showLogs = logs.slice(0 , 6);
 
   const getTime = () => {
     const now = new Date()
@@ -138,7 +139,7 @@ export default function LogAlert() {
             <div className="log-empty">No logs yet...</div>
           )}
 
-          {logs.map((log, index) => (
+          {showLogs.map((log, index) => (
             <div key={index} className={`log-item ${log.type}`}>
               <span
                 className={`log-dot ${log.type === "success"
