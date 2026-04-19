@@ -1,65 +1,138 @@
-import { useState } from "react";
-import { Modal, Table, Tag, DatePicker, Space, Empty } from "antd";
-import dayjs, { Dayjs } from "dayjs";
+import { useState, useEffect } from "react"
+import Control from "./Control"
+import { Modal, Table, Tag, DatePicker, Space, Empty } from "antd"
+import { Dayjs } from "dayjs"
+import { db } from "../../firebase"
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore"
+
+type LogType = "info" | "success" | "error"
+
+interface LogItem {
+  time: string
+  messages: string[]
+  type: LogType
+}
 
 export default function LogAlert() {
-  const [open, setOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs()); // Defualt = Today
+  const [logs, setLogs] = useState<LogItem[]>([])
+  const [open, setOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
 
-  // Data
-  const data = [
-    {
-      key: "1",
-      time: "09:56:32",
-      type: "SUCCESS",
-      message: "Move Completed: Position 1 → Position 2",
-      date: "02-04-2026",
-    },
-    {
-      key: "2",
-      time: "09:54:44",
-      type: "ERROR",
-      message: "Object not detected.",
-      date: "01-04-2026",
+  const showLogs = logs.slice(0, 6)
+
+  // 🔥 โหลด log จาก Firebase (Realtime)
+  useEffect(() => {
+    const q = query(collection(db, "logs"), orderBy("time", "desc"))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data: LogItem[] = snapshot.docs.map((doc) => {
+        const d: any = doc.data()
+        const dateObj = d.time?.toDate?.() || new Date()
+
+        const date = dateObj.toLocaleDateString("en-GB")
+        const time = dateObj.toLocaleTimeString("en-GB")
+
+        return {
+          time: `${date} (${time})`,
+          type: d.status,
+          messages: [d.message],
+        }
+      })
+
+      setLogs(data)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  const sendData = async (
+    name: string,
+    value: number,
+    prev: number,
+    setPrevAngles: any
+  ) => {
+    const data = {
+      joint: name,
+      angle: name === "gripper" ? 90 - value : value,
     }
-  ];
 
-  // Filter
-  const filteredData = selectedDate 
-    ? data.filter(
-      (item) => item.date === selectedDate.format("DD-MM-YYYY")
+    try {
+      const res = await fetch("https://project-final-gg.onrender.com/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+
+      await res.json()
+
+      // ✅ บันทึก SUCCESS ลง Firebase
+      await addDoc(collection(db, "logs"), {
+        message: `[INFO] Moving: ${name} ${prev} -> ${value}`,
+        status: "success",
+        time: serverTimestamp(),
+      })
+
+      setPrevAngles((prevState: any) => ({
+        ...prevState,
+        [name]: value,
+      }))
+    } catch (err) {
+      // ❌ บันทึก ERROR ลง Firebase
+      await addDoc(collection(db, "logs"), {
+        message: `[ERROR] Moving failed: ${name}`,
+        status: "error",
+        time: serverTimestamp(),
+      })
+    }
+  }
+
+  const tableData = logs.map((log, index) => {
+    const [date, time] = log.time.split(" ")
+    return {
+      key: index,
+      date: date,
+      time: time?.replace("(", "").replace(")", ""),
+      type: log.type.toUpperCase(),
+      message: log.messages.join(" "),
+    }
+  })
+
+  const filteredData = selectedDate
+    ? tableData.filter(
+        (item) => item.date === selectedDate.format("DD/MM/YYYY")
       )
-    : data;
+    : tableData
 
-  // Columns
   const columns = [
+    { title: "Date", dataIndex: "date" },
+    { title: "Time", dataIndex: "time" },
     {
-      title: "Date",
-      dataIndex: "date",
-    },
-    {
-      title: "Time",
-      dataIndex: "time",
-    },
-    {
-      title : "Status",
+      title: "Status",
       dataIndex: "type",
       render: (type: string) => {
-        let color = "default";
-        if (type === "SUCCESS") color = "green";
-        if (type === "ERROR") color = "red";
-
-        return <Tag color={color}>{type}</Tag>;
+        let color = "default"
+        if (type === "SUCCESS") color = "green"
+        if (type === "ERROR") color = "red"
+        if (type === "INFO") color = "gold"
+        return <Tag color={color}>{type}</Tag>
       },
     },
-    {
-      title: "Message",
-      dataIndex: "message",
-    },
-  ];
+    { title: "Message", dataIndex: "message" },
+  ]
 
   return (
     <>
+      <Control sendData={sendData} />
+
       <div className="log-alert-card">
         <div className="log-alert-header">
           <span className="section-pill">Log Alert</span>
@@ -67,32 +140,40 @@ export default function LogAlert() {
         </div>
 
         <div className="log-list">
-          <div className="log-item success">
-            <span className="log-dot green"></span>
-            <div className="log-content">
-              <div className="log-time">09:56:32</div>
-              <div className="log-message">[INFO] Moving: Position 1 → Position 2</div>
-              <div className="log-message">[SUCCESS] Move completed: Position 1 → Position 2</div>
-            </div>
-          </div>
+          {logs.length === 0 && (
+            <div className="log-empty">No logs yet...</div>
+          )}
 
-          <div className="log-item error">
-            <span className="log-dot red"></span>
-            <div className="log-content">
-              <div className="log-time">09:54:44</div>
-              <div className="log-message">[INFO] Moved from Position 1 → Position 2</div>
-              <div className="log-message">[ERROR] Object note detected.</div>
+          {showLogs.map((log, index) => (
+            <div key={index} className={`log-item ${log.type}`}>
+              <span
+                className={`log-dot ${
+                  log.type === "success"
+                    ? "green"
+                    : log.type === "error"
+                    ? "red"
+                    : "yellow"
+                }`}
+              ></span>
+
+              <div className="log-content">
+                <div className="log-time">{log.time}</div>
+
+                {log.messages.map((msg, i) => (
+                  <div key={i} className="log-message">
+                    {msg}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
+
+          <button className="view-all-btn" onClick={() => setOpen(true)}>
+            View All +
+          </button>
         </div>
-
-        {/* Button */}
-        <button className="view-all-btn" onClick={() => setOpen(true)}>
-          View All +
-        </button>
       </div>
-      
-      {/* Modal */}
+
       <Modal
         title="All Logs"
         open={open}
@@ -100,18 +181,15 @@ export default function LogAlert() {
         footer={null}
         width={900}
       >
-        {/* Filter */}
-        <Space style={{ marginBottom: 16}}>
+        <Space style={{ marginBottom: 16 }}>
           <span>Select Date:</span>
-
-          <DatePicker 
+          <DatePicker
             value={selectedDate}
             allowClear
-            onChange={(date) => setSelectedDate(date)} 
+            onChange={(date) => setSelectedDate(date)}
           />
         </Space>
 
-        {/* Table */}
         <Table
           columns={columns}
           dataSource={filteredData}
@@ -123,5 +201,5 @@ export default function LogAlert() {
         />
       </Modal>
     </>
-  );
+  )
 }

@@ -10,8 +10,15 @@ const motors = [
   { name: "gripper", angle: 45 },
 ]
 
-export default function Control() {
+export default function Control({ sendData }: any) {
   const [angles, setAngles] = useState(
+    motors.reduce((acc, m) => {
+      acc[m.name] = m.angle
+      return acc
+    }, {} as Record<string, number>)
+  )
+
+  const [prevAngles, setPrevAngles] = useState(
     motors.reduce((acc, m) => {
       acc[m.name] = m.angle
       return acc
@@ -63,12 +70,6 @@ export default function Control() {
           />
         </div>
       </div>
-
-      <div className="motor-header">
-        <span>Position</span>
-        <span>Angle</span>
-      </div>
-
       <div className="motor-list">
         {motors.map((motor, index) => (
           <div key={index} className="motor-row">
@@ -85,8 +86,22 @@ export default function Control() {
               onChange={(e) =>
                 handleChange(motor.name, Number(e.target.value))
               }
-              onMouseUp={() => sendData(motor.name)}
-              onTouchEnd={() => sendData(motor.name)}
+              onMouseUp={() =>
+                sendData(
+                  motor.name,
+                  angles[motor.name],
+                  prevAngles[motor.name],
+                  setPrevAngles
+                )
+              }
+              onTouchEnd={() =>
+                sendData(
+                  motor.name,
+                  angles[motor.name],
+                  prevAngles[motor.name],
+                  setPrevAngles
+                )
+              }
               className="motor-slider"
             />
           </div>
