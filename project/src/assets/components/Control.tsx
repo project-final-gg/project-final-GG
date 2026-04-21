@@ -1,5 +1,4 @@
-import { useState, useRef } from "react"
-import LogAlert from "./LogAlert"
+import { useState } from "react"
 
 const motors = [
   { name: "base", angle: 90 },
@@ -30,28 +29,6 @@ export default function Control({ sendData }: any) {
       ...prev,
       [name]: value,
     }))
-  }
-
-  const sendData = (name: string) => {
-    const value = angles[name]
-
-    const data = {
-      joint: name,
-      angle: name === "Position 6" ? 90 - value : value,
-    }
-
-    console.log("📤 Sending:", data)
-
-    fetch("https://project-final-gg.onrender.com/update", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then(res => res.json())
-      .then(res => console.log("📥 Response:", res))
-      .catch(err => console.error("❌ Error:", err))
   }
 
   return (
