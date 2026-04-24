@@ -9,111 +9,250 @@
         body {
             font-family: Arial;
             padding: 20px;
+            background: #111;
+            color: #fff;
         }
 
-        .control {
-            margin-bottom: 20px;
+        video {
+            width: 480px;
+            background: black;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        #log {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #222;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
         }
     </style>
-
 </head>
 
 <body>
 
     <h2>🤖 Robot Arm Control</h2>
 
+    <!-- เพิ่ม muted เพื่อให้ autoplay ทำงานโดยไม่ต้องมี user gesture -->
+    <video id="video" autoplay playsinline muted></video>
+
+    <br><br>
+
+    <!-- AI CONTROL -->
+    <button onclick="enableAI()">🧠 Enable Coral AI</button>
+    <button onclick="disableAI()">💤 Disable Coral AI</button>
+
+    <!-- TARGET CONTROL -->
+    <h3>🎯 Select Target</h3>
+
+    <button onclick="setTarget('Screwdriver')">Screwdriver</button>
+    <button onclick="setTarget('Pliers')">Pliers</button>
+    <button onclick="setTarget('Cutter')">Cutter</button>
+    <button onclick="setTarget('Cube')">Cube</button>
+    <button onclick="setTarget('None')">STOP</button>
+
     <div id="log"></div>
 
-    <!-- Controls -->
-    <div class="control">Base
-        <input type="range" min="0" max="180" value="90" id="base">
-        <span id="baseValue">90</span>
-    </div>
-
-    <div class="control">Shoulder
-        <input type="range" min="0" max="180" value="90" id="shoulder">
-        <span id="shoulderValue">90</span>
-    </div>
-
-    <div class="control">Elbow
-        <input type="range" min="0" max="180" value="90" id="elbow">
-        <span id="elbowValue">90</span>
-    </div>
-
-    <div class="control">Wrist Vertical
-        <input type="range" min="0" max="180" value="90" id="wrist_v">
-        <span id="wrist_vValue">90</span>
-    </div>
-
-    <div class="control">Wrist Rotate
-        <input type="range" min="0" max="180" value="90" id="wrist_r">
-        <span id="wrist_rValue">90</span>
-    </div>
-
-    <div class="control">Gripper
-        <input type="range" min="0" max="90" value="45" id="gripper">
-        <span id="gripperValue">45</span>
-    </div>
-
     <script>
+        const WS_URL = "wss://b25f-1-47-9-6.ngrok-free.app/ws/browser";
+        const API_URL = "https://b25f-1-47-9-6.ngrok-free.app";
 
-        // ===== debug log =====
         function log(msg) {
-            const logDiv = document.getElementById("log");
-            logDiv.innerHTML = "<p>" + msg + "</p>" + logDiv.innerHTML;
+            document.getElementById("log").innerHTML =
+                `<div>${new Date().toLocaleTimeString()} - ${msg}</div>` +
+                document.getElementById("log").innerHTML;
         }
 
-        // ===== setup slider =====
-        function setupSlider(id) {
+        // =========================
+        // STATE (เปลี่ยนได้ระหว่าง reconnect)
+        // =========================
+        let ws = null;
+        let pc = null;
+        let remoteReady = false;
+        let iceQueue = [];
+        let reconnectTimer = null;
 
-            const slider = document.getElementById(id);
-            const value = document.getElementById(id + "Value");
+        // =========================
+        // SEND (safe — ส่งเฉพาะตอน ws เปิดจริง)
+        // =========================
+        function safeSend(obj) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(obj));
+            } else {
+                log("⚠️ ws not open, dropped: " + obj.type);
+            }
+        }
 
-            let timer = null;
+        // =========================
+        // CLEANUP (ปิดของเก่าก่อนสร้างใหม่)
+        // =========================
+        function cleanup() {
+            if (pc) {
+                try { pc.close(); } catch (e) { }
+                pc = null;
+            }
+            if (ws) {
+                try {
+                    ws.onclose = null;   // กัน onclose เรียก reconnect ซ้ำ
+                    ws.close();
+                } catch (e) { }
+                ws = null;
+            }
+            remoteReady = false;
+            iceQueue = [];
+        }
 
-            slider.addEventListener("input", function () {
+        // =========================
+        // CONNECT (เรียกซ้ำได้ทุกครั้งที่ reconnect)
+        // =========================
+        function connect() {
+            cleanup();
+            log("🔌 connecting...");
 
-                value.innerText = slider.value;
-
-                clearTimeout(timer);
-
-                // debounce กัน spam
-                timer = setTimeout(() => {
-
-                    const rawValue = parseInt(slider.value);
-
-                    const data = {
-                        joint: id,
-                        angle: id === "gripper" ? 90 - rawValue : rawValue
-                    };
-
-                    log("Sending: " + JSON.stringify(data));
-
-                    fetch("http://localhost:8000/update", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(data)
-                    })
-                        .then(res => res.json())
-                        .then(res => log("Response: " + JSON.stringify(res)))
-                        .catch(err => log("Error: " + err));
-
-                }, 100);
-
+            // ---- PC ----
+            pc = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
             });
 
+            pc.ontrack = (event) => {
+                log("🎥 stream received");
+                document.getElementById("video").srcObject = event.streams[0];
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    safeSend({
+                        type: "candidate",
+                        data: {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex
+                        }
+                    });
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                log("PC STATE: " + pc.connectionState);
+                // ถ้า PC พัง (แต่ WS ยังเปิด) ก็ reconnect ทั้งหมด
+                if (pc.connectionState === "failed" ||
+                    pc.connectionState === "disconnected") {
+                    scheduleReconnect();
+                }
+            };
+
+            // ---- WS ----
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = async () => {
+                log("🟢 WS connected");
+                try {
+                    pc.addTransceiver("video", { direction: "recvonly" });
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    safeSend({ type: "offer", data: pc.localDescription });
+                } catch (e) {
+                    log("❌ offer error: " + e.message);
+                    scheduleReconnect();
+                }
+            };
+
+            ws.onmessage = async (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === "answer") {
+                    try {
+                        await pc.setRemoteDescription(msg.data);
+                        remoteReady = true;
+                        log("✅ answer received");
+
+                        for (const c of iceQueue) {
+                            try { await pc.addIceCandidate(c); } catch (e) { }
+                        }
+                        iceQueue = [];
+                    } catch (e) {
+                        log("❌ answer error: " + e.message);
+                    }
+                }
+
+                if (msg.type === "candidate") {
+                    const data = msg.data;
+                    if (!data?.candidate) return;
+
+                    const candidate = new RTCIceCandidate({
+                        candidate: data.candidate,
+                        sdpMid: data.sdpMid,
+                        sdpMLineIndex: data.sdpMLineIndex
+                    });
+
+                    if (!remoteReady) {
+                        iceQueue.push(candidate);
+                    } else {
+                        try { await pc.addIceCandidate(candidate); } catch (e) { }
+                    }
+                }
+            };
+
+            ws.onerror = () => log("❌ WS error");
+            ws.onclose = () => {
+                log("🔴 WS closed");
+                scheduleReconnect();
+            };
         }
 
-        // ===== init =====
-        setupSlider("base");
-        setupSlider("shoulder");
-        setupSlider("elbow");
-        setupSlider("wrist_v");
-        setupSlider("wrist_r");
-        setupSlider("gripper");
+        // =========================
+        // RECONNECT (debounced — ไม่ยิงซ้ำรัวๆ)
+        // =========================
+        function scheduleReconnect() {
+            if (reconnectTimer) return;
+            log("⏳ reconnect in 2s...");
+            reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                connect();
+            }, 2000);
+        }
 
+        // =========================
+        // AI TOGGLE
+        // =========================
+        function enableAI() {
+            safeSend({ type: "toggle_ai", enable: true });
+            log("🧠 AI ENABLE sent");
+        }
+
+        function disableAI() {
+            safeSend({ type: "toggle_ai", enable: false });
+            log("💤 AI DISABLE sent");
+        }
+
+        // =========================
+        // 🎯 SET TARGET (HTTP)
+        // =========================
+        function setTarget(name) {
+            fetch(`${API_URL}/set_target`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ target: name })
+            })
+                .then(res => res.json())
+                .then(data => log("🎯 Target -> " + name))
+                .catch(err => {
+                    log("❌ Target error");
+                    console.error(err);
+                });
+        }
+
+        // =========================
+        // START
+        // =========================
+        connect();
     </script>
 
 </body>
