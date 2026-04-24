@@ -108,8 +108,8 @@ export default function LogAlert() {
 
   const filteredData = selectedDate
     ? tableData.filter(
-        (item) => item.date === selectedDate.format("DD/MM/YYYY")
-      )
+      (item) => item.date === selectedDate.format("DD/MM/YYYY")
+    )
     : tableData
 
   const columns = [
@@ -147,13 +147,12 @@ export default function LogAlert() {
           {showLogs.map((log, index) => (
             <div key={index} className={`log-item ${log.type}`}>
               <span
-                className={`log-dot ${
-                  log.type === "success"
+                className={`log-dot ${log.type === "success"
                     ? "green"
                     : log.type === "error"
-                    ? "red"
-                    : "yellow"
-                }`}
+                      ? "red"
+                      : "yellow"
+                  }`}
               ></span>
 
               <div className="log-content">
