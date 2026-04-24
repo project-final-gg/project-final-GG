@@ -9,12 +9,12 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <NavLink
-          to="/home"
+          to="/Control"
           className={({ isActive }) =>
             `sidebar-link ${isActive ? "active" : ""}`
           }
         >
-          Home
+          Control
         </NavLink>
 
         <NavLink
