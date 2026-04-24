@@ -7,8 +7,8 @@ export default function DeepCamera() {
 
   const [logs, setLogs] = useState<string[]>([]);
 
-  const WS_URL = "wss://b25f-1-47-9-6.ngrok-free.app/ws/browser";
-  const API_URL = "https://b25f-1-47-9-6.ngrok-free.app";
+  const WS_URL = "wss://project-final-gg.onrender.com//ws/browser";
+  const API_URL = "https://project-final-gg.onrender.com/";
 
   const addLog = (msg: string) => {
     setLogs((prev) => [
