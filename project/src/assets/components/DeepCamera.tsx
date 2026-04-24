@@ -7,14 +7,14 @@ export default function DeepCamera() {
 
   const [logs, setLogs] = useState<string[]>([]);
 
-  const WS_URL = "wss://project-final-gg.onrender.com//ws/browser";
-  const API_URL = "https://project-final-gg.onrender.com/";
+  const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
+  const API_URL = "https://project-final-gg.onrender.com";
 
   const addLog = (msg: string) => {
-    setLogs((prev) => [
-      `${new Date().toLocaleTimeString()} - ${msg}`,
-      ...prev,
-    ]);
+    setLogs((prev) => {
+      if (prev.length > 0 && prev[0].includes(msg)) return prev;
+      return [`${new Date().toLocaleTimeString()} - ${msg}`, ...prev];
+    });
   };
 
   const safeSend = (obj: object) => {
@@ -77,7 +77,7 @@ export default function DeepCamera() {
         addLog("✅ answer");
 
         for (const c of iceQueue) {
-          try { await pc.addIceCandidate(c); } catch {}
+          try { await pc.addIceCandidate(c); } catch { }
         }
         iceQueue = [];
       }
@@ -88,7 +88,7 @@ export default function DeepCamera() {
         if (!remoteReady) {
           iceQueue.push(candidate);
         } else {
-          try { await pc.addIceCandidate(candidate); } catch {}
+          try { await pc.addIceCandidate(candidate); } catch { }
         }
       }
     };
@@ -115,6 +115,7 @@ export default function DeepCamera() {
 
   // ===== TARGET =====
   const setTarget = async (name: string) => {
+    setActive(name);
     await fetch(`${API_URL}/set_target`, {
       method: "POST",
       headers: {
@@ -124,7 +125,29 @@ export default function DeepCamera() {
     });
 
     addLog("🎯 " + name);
+
+    setTimeout(() => {
+      setActive(null);
+    }, 3000);
   };
+
+  const Object_List = [
+    { label: "ไขขวง", value: "Screwdriver" },
+    { label: "คีม", value: "Pliers" },
+    { label: "คัตเตอร์", value: "Cutter" },
+    { label: "ลูกบาศก์", value: "Cube" },
+    { label: "ปากกาน้ำเงิน", value: "Blue_pen" },
+    { label: "ปากกาแดง", value: "Red_pen" },
+    { label: "ไขควงวัดไฟ", value: "Electrical_screwdriver" },
+    { label: "ยางลบ", value: "Eraser" },
+    { label: "ไขควงปากแบน", value: "Flat-head_screwdriver" },
+    { label: "ปากกาตัดเส้น", value: "Line_cutting_pen" },
+    { label: "คีมปากจิ้งจก", value: "Needle_nose_pliers" },
+    { label: "ดินสอ", value: "Pencil" },
+    { label: "คีมตัดสายไฟ", value: "Wire_cutting_pliers" }
+  ];
+
+  const [active, setActive] = useState<string | null>(null);
 
   return (
     <div className="deepcam-page">
@@ -162,27 +185,37 @@ export default function DeepCamera() {
         <div className="section-pill">Object</div>
 
         <div className="object-tags">
-          {["Screwdriver", "Pliers", "Cutter", "Cube"].map((obj) => (
-            <span
-              key={obj}
-              className="tag clickable"
-              onClick={() => setTarget(obj)}
-            >
-              {obj}
-            </span>
-          ))}
+          {Object_List.map((obj) => {
+            const isActive = active === obj.value;
+            return (
+              <span
+                key={obj.value}
+                style={{
+                  backgroundColor: isActive ? "#ffb74d" : "#e0e0e0",
+                  color: isActive ? "#000" : "#757575",
+                  cursor: "pointer",
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  fontSize: "14px",
+                  fontWeight: isActive ? "bold" : "normal",
+                  transition: "all 0.3s ease"
+                }}
+                className="tag"
+                onClick={() => setTarget(obj.value)}
+              >
+                {obj.label}
+              </span>
+            );
+          })}
 
-          <span
+          {/* <span
             className="tag stop"
             onClick={() => setTarget("None")}
           >
             STOP
-          </span>
+          </span> */}
         </div>
 
-        <button className="import-btn">
-          Import Object +
-        </button>
       </div>
     </div>
   );

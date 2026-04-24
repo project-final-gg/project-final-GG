@@ -3,7 +3,7 @@ import Sidebar from "./sidebar"
 import DeepCamera from "./assets/components/DeepCamera"
 import LogAlert from "./assets/components/LogAlert"
 
-function Home() {
+function Control() {
   return (
     <div className="page-shell home-page">
       <div className="home-layout">
@@ -28,8 +28,8 @@ function App() {
 
       <main className="main-area">
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Navigate to="/Control" replace />} />
+          <Route path="/Control" element={<Control />} />
           <Route path="/deepcam" element={<DeepCamPage />} />
         </Routes>
       </main>
