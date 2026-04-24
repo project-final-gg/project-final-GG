@@ -1,7 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Control from "./Control"
 import { Modal, Table, Tag, DatePicker, Space, Empty } from "antd"
 import { Dayjs } from "dayjs"
+import { db } from "../../firebase"
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore"
 
 type LogType = "info" | "success" | "error"
 
@@ -16,12 +25,32 @@ export default function LogAlert() {
   const [open, setOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
 
-  const getTime = () => {
-    const now = new Date()
-    const date = now.toLocaleDateString("en-GB")
-    const time = now.toLocaleTimeString("en-GB")
-    return `${date} (${time})`
-  }
+  const showLogs = logs.slice(0, 6)
+
+  // 🔥 โหลด log จาก Firebase (Realtime)
+  useEffect(() => {
+    const q = query(collection(db, "logs"), orderBy("time", "desc"))
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data: LogItem[] = snapshot.docs.map((doc) => {
+        const d: any = doc.data()
+        const dateObj = d.time?.toDate?.() || new Date()
+
+        const date = dateObj.toLocaleDateString("en-GB")
+        const time = dateObj.toLocaleTimeString("en-GB")
+
+        return {
+          time: `${date} (${time})`,
+          type: d.status,
+          messages: [d.message],
+        }
+      })
+
+      setLogs(data)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const sendData = async (
     name: string,
@@ -34,18 +63,6 @@ export default function LogAlert() {
       angle: name === "gripper" ? 90 - value : value,
     }
 
-    const time = getTime()
-
-    // INFO
-    // setLogs(prevLogs => [
-    //   {
-    //     time,
-    //     type: "info",
-    //     messages: [`[INFO] Moving: ${name} ${prev} -> ${value}`],
-    //   },
-    //   ...prevLogs,
-    // ])
-
     try {
       const res = await fetch("https://project-final-gg.onrender.com/update", {
         method: "POST",
@@ -57,35 +74,24 @@ export default function LogAlert() {
 
       await res.json()
 
-      // SUCCESS
-      setLogs(prevLogs => [
-        {
-          time,
-          type: "success",
-          messages: [
-            `[INFO] Moving: ${name} ${prev} -> ${value}`,
-            `[SUCCESS] Move complete`,
-          ],
-        },
-        ...prevLogs,
-      ])
+      // ✅ บันทึก SUCCESS ลง Firebase
+      await addDoc(collection(db, "logs"), {
+        message: `[INFO] Moving: ${name} ${prev} -> ${value}`,
+        status: "success",
+        time: serverTimestamp(),
+      })
 
       setPrevAngles((prevState: any) => ({
         ...prevState,
         [name]: value,
       }))
     } catch (err) {
-      setLogs(prevLogs => [
-        {
-          time,
-          type: "error",
-          messages: [
-            `[INFO] Moving: ${name} ${prev} -> ${value}`,
-            `[ERROR] Connection Failed`,
-          ],
-        },
-        ...prevLogs,
-      ])
+      // ❌ บันทึก ERROR ลง Firebase
+      await addDoc(collection(db, "logs"), {
+        message: `[ERROR] Moving failed: ${name}`,
+        status: "error",
+        time: serverTimestamp(),
+      })
     }
   }
 
@@ -102,8 +108,8 @@ export default function LogAlert() {
 
   const filteredData = selectedDate
     ? tableData.filter(
-      item => item.date === selectedDate.format("DD/MM/YYYY")
-    )
+        (item) => item.date === selectedDate.format("DD/MM/YYYY")
+      )
     : tableData
 
   const columns = [
@@ -138,15 +144,16 @@ export default function LogAlert() {
             <div className="log-empty">No logs yet...</div>
           )}
 
-          {logs.map((log, index) => (
+          {showLogs.map((log, index) => (
             <div key={index} className={`log-item ${log.type}`}>
               <span
-                className={`log-dot ${log.type === "success"
-                  ? "green"
-                  : log.type === "error"
+                className={`log-dot ${
+                  log.type === "success"
+                    ? "green"
+                    : log.type === "error"
                     ? "red"
                     : "yellow"
-                  }`}
+                }`}
               ></span>
 
               <div className="log-content">
@@ -167,7 +174,6 @@ export default function LogAlert() {
         </div>
       </div>
 
-      {/* Modal */}
       <Modal
         title="All Logs"
         open={open}
