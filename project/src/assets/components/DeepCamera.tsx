@@ -125,6 +125,10 @@ export default function DeepCamera() {
     });
 
     addLog("🎯 " + name);
+
+    setTimeout(() => {
+      setActive(null);
+    }, 3000);
   };
 
   const Object_List = [
