@@ -8,7 +8,6 @@ import ObjectDetectContent from './assets/components/contentTabsObjectDetect';
 import DeepCameraContent from './assets/components/contentDeepCamera';
 import AIDetectContent from './assets/components/contentAiDetect';
 import ActivityLogsContent from './assets/components/contentActivityLogs';
-import { DeepCamera, AIDetect } from './assets/components/contentDeepCameraAI';
 
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('1');
@@ -57,31 +56,51 @@ export default function Dashboard() {
             </header>
 
             <main className="flex flex-row flex-1 p-4 gap-4 overflow-hidden">
-                <div className="flex flex-col flex-[1.5] gap-4 h-full overflow-hidden">
-                    <div className="h-[45%] w-full bg-white shadow-sm border border-gray-200 rounded-2xl p-4 flex-shrink-0 overflow-hidden">
-                        <DeepCameraContent />
-                    </div>
 
-                    <div className="flex-1 w-full bg-white shadow-sm border border-gray-200 rounded-2xl flex flex-col overflow-hidden">
+                <div className="flex flex-row gap-4 flex-1 overflow-hidden">
+                    <div className="aspect-square h-full max-h-full">
+
+                        <div className="bg-white shadow-sm border border-gray-200 rounded-2xl h-full w-full overflow-hidden">
+
+                            <DeepCameraContent />
+
+                        </div>
+                    </div>
+                    <div className="flex-1 bg-white shadow-sm border border-gray-200 rounded-2xl flex flex-col overflow-hidden">
+
                         <div className='px-6 pt-4 flex-1 flex flex-col overflow-hidden'>
+
                             <style>
                                 {`
-            .ant-tabs-tab-btn {
-                color: #94a3b8 !important;
-                font-weight: 700 !important; 
-                font-size: 16px !important;  
-            }
-            .ant-tabs-tab-active .ant-tabs-tab-btn {
-                color: #fb923c !important; 
-            }
-            .ant-tabs-tab:hover .ant-tabs-tab-btn {
-                color: #fb923c !important;
-            }
-        `}
+                    .ant-tabs-tab-btn {
+                        color: #94a3b8 !important;
+                        font-weight: 700 !important;
+                        font-size: 16px !important;
+                    }
+
+                    .ant-tabs-tab-active .ant-tabs-tab-btn {
+                        color: #fb923c !important;
+                    }
+
+                    .ant-tabs-tab:hover .ant-tabs-tab-btn {
+                        color: #fb923c !important;
+                    }
+                    `}
                             </style>
-                            <ConfigProvider theme={{
-                                components: { Tabs: { itemSelectedColor: "#fb923c", inkBarColor: "#fb923c", itemHoverColor: "#fb923c", titleFontSize: 16 } }
-                            }}>
+
+                            <ConfigProvider
+                                theme={{
+                                    components: {
+                                        Tabs: {
+                                            itemSelectedColor: "#fb923c",
+                                            inkBarColor: "#fb923c",
+                                            itemHoverColor: "#fb923c",
+                                            titleFontSize: 16
+                                        }
+                                    }
+                                }}
+                            >
+
                                 <Tabs
                                     className="flex-1 flex flex-col overflow-hidden"
                                     activeKey={activeTab}
@@ -90,23 +109,32 @@ export default function Dashboard() {
                                         {
                                             key: '1',
                                             label: 'Joint Controls',
-                                            // ยอมให้ Scroll เฉพาะส่วน Slider
                                             children: (
                                                 <div className="h-full w-full overflow-hidden">
-                                                    <JointControlsContent onRef={(ref) => (jointRef.current = ref)} />
+                                                    <JointControlsContent
+                                                        onRef={(ref) => (jointRef.current = ref)}
+                                                    />
                                                 </div>
                                             )
                                         },
-                                        { key: '2', label: 'Object Detect', children: <ObjectDetectContent /> },
+                                        {
+                                            key: '2',
+                                            label: 'Object Detect',
+                                            children: <ObjectDetectContent />
+                                        },
                                     ]}
                                 />
+
                             </ConfigProvider>
                         </div>
 
                         {activeTab === '1' && (
                             <div className="px-6 pb-6 bg-white flex-shrink-0">
+
                                 <Divider className="mt-0 mb-4" />
+
                                 <div className="flex justify-center">
+
                                     <Button
                                         icon={<ReloadOutlined />}
                                         onClick={() => jointRef.current?.handleReset()}
@@ -114,21 +142,30 @@ export default function Dashboard() {
                                     >
                                         Reset Position
                                     </Button>
+
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
-
                 <div className="hidden lg:flex flex-col gap-4 w-96 flex-shrink-0 h-full overflow-hidden">
-                    <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 h-[35%] flex-shrink-0 overflow-hidden">
+
+                    {/* AI DETECT */}
+                    <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 h-[35%] overflow-hidden">
+
                         <AIDetectContent />
+
                     </div>
+
+                    {/* LOGS */}
                     <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 flex-1 overflow-hidden">
+
                         <ActivityLogsContent />
+
                     </div>
                 </div>
             </main>
+
         </div>
     );
 }
