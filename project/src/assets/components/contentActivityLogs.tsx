@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from "../../firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { Modal, Table, Tag, DatePicker, Space } from "antd";
+import { Modal, Table, DatePicker, Space } from "antd";
 import { Dayjs } from "dayjs";
 
 // แผนผังไอคอนตัวเลขตามลำดับ Joint
@@ -37,7 +37,6 @@ export default function ActivityLogsContent() {
         return () => unsubLogs();
     }, []);
 
-    // ฟังก์ชันจัดรูปแบบข้อความ Log
     const formatLogMessage = (rawMsg: string, time: string) => {
         const match = rawMsg.match(/Moving:\s+(\w+)\s+(\d+)\s+->\s+(\d+)/);
         
@@ -80,14 +79,13 @@ export default function ActivityLogsContent() {
                 `}
             </style>
 
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="flex items-center justify-between mb-4">
                 <span className=" text-orange-600 rounded-full text-[16px] font-black uppercase tracking-wider">
                     Activity Logs
                 </span>
                 <span className="text-lg">🔔</span>
             </div>
 
-            {/* ส่วนแสดงรายการ Log พร้อม Scrollbar ที่โชว์ตลอด */}
             <div className="flex-1 overflow-y-auto pr-2 custom-scroll-container">
                 <div className="space-y-0.5">
                     {logs.length === 0 && (

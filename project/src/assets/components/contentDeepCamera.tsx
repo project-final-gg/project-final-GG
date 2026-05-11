@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function DeepCameraContent() {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -70,7 +70,6 @@ export default function DeepCameraContent() {
                 Deep Camera
             </h3>
             
-            {/* Container สำหรับวิดีโอ */}
             <div className="flex-1 ml-4 mr-4 mb-4 bg-black rounded-xl overflow-hidden border border-slate-200 relative">
                 <video
                     ref={videoRef}
@@ -80,7 +79,6 @@ export default function DeepCameraContent() {
                     className="w-full h-full" 
                 />
                 
-                {/* Overlay แสดงสถานะเล็กน้อย */}
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md">
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
                     <span className="text-[9px] text-white font-bold uppercase">Live</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Slider, Spin } from 'antd';
 import { db } from "../../firebase"; 
 import { collection, addDoc, serverTimestamp, doc, setDoc, onSnapshot, getDoc } from "firebase/firestore";
@@ -21,7 +21,6 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
     const [tempPrevValues, setTempPrevValues] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true); // เพิ่ม loading เพื่อรอโหลดค่าจาก Firebase
 
-    // 1. ดึงข้อมูลล่าสุดจาก Firebase เมื่อโหลด Component (ช่วยให้ค่าไม่หายตอนรีเฟรช)
     useEffect(() => {
         const fetchCurrentStatus = async () => {
             try {
@@ -46,7 +45,6 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
         fetchCurrentStatus();
     }, []);
 
-    // 2. คอยฟังการเปลี่ยนแปลงแบบ Real-time (ถ้ามีเครื่องอื่นสั่ง งานก็จะอัปเดตที่หน้าจอเราด้วย)
     useEffect(() => {
         const unsubStatus = onSnapshot(doc(db, "robot_status", "current"), (docSnap) => {
             if (docSnap.exists()) {
@@ -61,7 +59,7 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
     }, []);
 
     const sendData = async (name: string, value: number, prev: number) => {
-        if (value === prev) return; // ถ้าค่าไม่เปลี่ยนไม่ต้องส่ง
+        if (value === prev) return; 
 
         const data = {
             joint: name,
@@ -112,44 +110,120 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
     if (loading) return <div className="flex justify-center items-center h-full"><Spin tip="Loading Status..." /></div>;
 
     return (
-        <div className="flex flex-col h-full w-full">
-            <div className="grid grid-cols-6 h-full w-full gap-2 py-2">
-                {joints.map((joint, index) => (
-                    <div key={index} className="flex flex-col items-center h-full min-h-0">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 flex-shrink-0">
-                            {joint.name}
+    <div className="w-full h-full overflow-hidden flex items-center">
+        <div
+            className="
+                w-full
+                h-full
+                flex flex-col
+                justify-evenly
+                px-[clamp(8px,1vw,24px)]
+                py-[clamp(4px,1vh,16px)]
+            "
+        >
+            {joints.map((joint, index) => (
+                <div
+                    key={index}
+                    className="
+                        flex flex-col
+                        items-center
+                        justify-center
+                        flex-1
+                        min-h-0
+                    "
+                >
+                    <div className="flex flex-col items-center">
+                        <span
+                            className="
+                                text-gray-400
+                                text-[clamp(8px,0.8vh,12px)]
+                                mb-[0.2vh]
+                            "
+                        >
+                            Max: {joint.max}°
                         </span>
 
-                        <div className="flex-1 w-full flex justify-center py-2 min-h-[150px]">
-                            <Slider
-                                vertical
-                                min={0}
-                                max={joint.max}
-                                value={joint.value}
-                                onChange={(val) => handleSliderChange(index, val)}
-                                onFocus={() => {
-                                    setTempPrevValues(prev => ({ ...prev, [joint.name]: joint.value }));
-                                }}
-                                onAfterChange={(val) => {
-                                    const lastValue = tempPrevValues[joint.name] ?? joint.value;
-                                    sendData(joint.name, val, lastValue);
-                                }}
-                                trackStyle={{ backgroundColor: '#fb923c' }}
-                                handleStyle={{ borderColor: '#fb923c', width: 12, height: 12 }}
-                            />
+                        <div
+                            className="
+                                rounded-full
+                                border-2 border-orange-400
+                                flex items-center justify-center
+                                shadow-sm
+
+                                w-[clamp(36px,3.8vh,64px)]
+                                h-[clamp(36px,3.8vh,64px)]
+                            "
+                        >
+                            <span
+                                className="
+                                    text-orange-600
+                                    font-bold
+                                    text-[clamp(10px,1.2vh,20px)]
+                                "
+                            >
+                                {joint.value}°
+                            </span>
                         </div>
 
-                        <div className="flex flex-col items-center flex-shrink-0 mt-2">
-                            <span className="text-[8px] text-gray-400 mb-1">Max: {joint.max}°</span>
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full border-2 border-orange-400 flex items-center justify-center shadow-sm">
-                                <span className="text-orange-600 font-bold text-[9px] md:text-xs">
-                                    {joint.value}°
-                                </span>
-                            </div>
-                        </div>
+                        <span
+                            className="
+                                uppercase
+                                font-bold
+                                text-slate-400
+
+                                mt-[0.3vh]
+                                mb-[0.6vh]
+
+                                text-[clamp(9px,0.9vh,14px)]
+                            "
+                        >
+                            {joint.name}
+                        </span>
                     </div>
-                ))}
-            </div>
+
+                    <div className="w-full px-[clamp(4px,1vw,20px)]">
+                        <Slider
+                            min={0}
+                            max={joint.max}
+                            value={joint.value}
+                            onChange={(val) =>
+                                handleSliderChange(index, val)
+                            }
+                            onFocus={() => {
+                                setTempPrevValues((prev) => ({
+                                    ...prev,
+                                    [joint.name]: joint.value,
+                                }));
+                            }}
+                            onAfterChange={(val) => {
+                                const lastValue =
+                                    tempPrevValues[joint.name] ??
+                                    joint.value;
+
+                                sendData(
+                                    joint.name,
+                                    val,
+                                    lastValue
+                                );
+                            }}
+                            trackStyle={{
+                                backgroundColor: '#fb923c',
+                                height: 4,
+                            }}
+                            railStyle={{
+                                height: 4,
+                                backgroundColor: '#e5e7eb',
+                            }}
+                            handleStyle={{
+                                borderColor: '#fb923c',
+                                width: 14,
+                                height: 14,
+                            }}
+                        />
+                    </div>
+                </div>
+            ))}
         </div>
-    );
+    </div>
+);
 }
