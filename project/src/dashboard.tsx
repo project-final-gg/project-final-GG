@@ -17,9 +17,32 @@ export default function Dashboard() {
     const [currentTime, setCurrentTime] = useState(dayjs().format('HH:mm:ss'));
     const jointRef = useRef<{ handleReset: () => void } | null>(null);
 
+    const API_URL = "https://project-final-gg.onrender.com";
+
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(dayjs().format('HH:mm:ss')), 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                const data = await res.json();
+
+                setIsConnected(data.esp32_status === "on");
+            } catch (err) {
+                console.error("Falied to fetch Robotic Arm Status");
+
+                setIsConnected(false);
+            }
+        };
+
+        fetchStatus();
+
+        const interval = setInterval(fetchStatus, 3000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const onClickReset = () => {

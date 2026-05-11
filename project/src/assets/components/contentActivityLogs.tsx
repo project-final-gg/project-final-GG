@@ -27,7 +27,7 @@ export default function ActivityLogsContent() {
                 const d: any = doc.data();
                 const dateObj = d.time?.toDate?.() || new Date();
                 return {
-                    time: dateObj.toLocaleTimeString("en-GB", { hour12: false }), 
+                    time: dateObj.toLocaleTimeString("en-GB", { hour12: false }),
                     dateRaw: dateObj.toLocaleDateString("en-GB"),
                     message: d.message,
                 };
@@ -39,7 +39,7 @@ export default function ActivityLogsContent() {
 
     const formatLogMessage = (rawMsg: string, time: string) => {
         const match = rawMsg.match(/Moving:\s+(\w+)\s+(\d+)\s+->\s+(\d+)/);
-        
+
         if (match) {
             const [_, name, prev, current] = match;
             const icon = jointIcons[name] || "•";
@@ -101,9 +101,9 @@ export default function ActivityLogsContent() {
                 </div>
             </div>
 
-            <button 
+            <button
                 onClick={() => setOpen(true)}
-                className="mt-2 w-full py-3 text-[10px] font-bold text-slate-400 hover:text-orange-500 transition-colors uppercase tracking-[0.2em] border-t border-slate-100"
+                className="mt-2 w-full py-3 text-[10px] font-bold text-slate-400 hover:text-orange-500 transition-colors uppercase tracking-[0.2em] border-t border-slate-100 cursor-pointer"
             >
                 View History Full Log
             </button>
@@ -111,20 +111,25 @@ export default function ActivityLogsContent() {
             <Modal title="System History" open={open} onCancel={() => setOpen(false)} footer={null} width={600}>
                 <Space style={{ marginBottom: 16 }}>
                     <span className="text-sm text-slate-500">Filter by Date:</span>
-                    <DatePicker 
-                        value={selectedDate} 
-                        onChange={(date) => setSelectedDate(date)} 
-                        format="DD/MM/YYYY" 
+                    <DatePicker
+                        value={selectedDate}
+                        onChange={(date) => setSelectedDate(date)}
+                        format="DD/MM/YYYY"
                     />
                 </Space>
-                <Table 
+                <Table
                     columns={[
                         { title: "Time", dataIndex: "time", width: 100 },
                         { title: "Activity", dataIndex: "message", render: (text) => <span className="text-xs">{text}</span> }
-                    ]} 
-                    dataSource={selectedDate ? logs.filter(l => l.dateRaw === selectedDate.format("DD/MM/YYYY")) : logs} 
-                    pagination={{ pageSize: 8 }} 
-                    size="small" 
+                    ]}
+                    dataSource={selectedDate ? logs.filter(l => l.dateRaw === selectedDate.format("DD/MM/YYYY")) : logs}
+                    pagination={{
+                        pageSize: 10,           
+                        showSizeChanger: false, 
+                        size: "small",
+                        position: ['bottomRight'],
+                    }}
+                    size="middle"
                 />
             </Modal>
         </div>
