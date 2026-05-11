@@ -30,7 +30,9 @@ export default function Dashboard() {
                 const res = await fetch(`${API_URL}/status`);
                 const data = await res.json();
 
-                setIsConnected(data.esp32_status === "on");
+                console.log("Robotic Arm Data: ", data);
+
+                setIsConnected(data.esp32_status === "online");
             } catch (err) {
                 console.error("Falied to fetch Robotic Arm Status");
 
