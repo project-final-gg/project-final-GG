@@ -115,7 +115,7 @@ async def ws_browser(ws: WebSocket):
             browser_ws = None
 
 @app.websocket("/ws/ai")
-async def ai_ws(ws: WebSocket):
+async def ws_ai(ws: WebSocket):
     global ai_ws
 
     await ws.accept()
@@ -130,11 +130,11 @@ async def ai_ws(ws: WebSocket):
             raw = await ws.receive_text()
             print("📩 ai ->", raw[:50])
 
-            data = json.load(raw)
+            data = json.loads(raw)
 
-            if data["type"] == "toggle_ai":
+            if data.get("type") == "toggle_ai":
 
-                enable = data["enable"]
+                enable = data.get("enable")
 
                 print("🧠 AI STATUS =", enable)
 
