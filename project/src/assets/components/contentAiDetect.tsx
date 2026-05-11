@@ -23,6 +23,21 @@ export default function AIDetectContent() {
         return () => ws.close();
     }, []);
 
+    useEffect(() => {
+        const savedAIStatus = localStorage.getItem("ai_status");
+
+        if (savedAIStatus !== null) {
+            const parsedStatus = JSON.parse(savedAIStatus);
+
+            setIsAIEnabled(parsedStatus);
+
+            safeSend({
+                type: "toggle_ai",
+                enable: parsedStatus,
+            });
+        }
+    }, []);
+
     const enableAI = () => {
         safeSend({
             type: "toggle_ai",
@@ -44,6 +59,8 @@ export default function AIDetectContent() {
     const handleToggleAI = (checked: boolean) => {
 
         setIsAIEnabled(checked);
+
+        localStorage.setItem("ai_status", JSON.stringify(checked));
 
         if (checked) {
             enableAI();

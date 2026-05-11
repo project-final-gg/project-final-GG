@@ -2,19 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { notification } from 'antd';
 
 const Object_List = [
-    { label: "ไขควง", value: "Screwdriver", id: "1" },
-    { label: "คีม", value: "Pliers", id: "2" },
-    { label: "คัตเตอร์", value: "Cutter", id: "3" },
-    { label: "ลูกบาศก์", value: "Cube", id: "4" },
-    { label: "ปากกาน้ำเงิน", value: "Blue_pen", id: "5" },
-    { label: "ปากกาแดง", value: "Red_pen", id: "6" },
-    { label: "ไขควงวัดไฟ", value: "Electrical_screwdriver", id: "7" },
-    { label: "ยางลบ", value: "Eraser", id: "8" },
-    { label: "ไขควงปากแบน", value: "Flat_head_screwdriver", id: "9" },
-    { label: "ปากกาตัดเส้น", value: "Line_cutting_pen", id: "10" },
-    { label: "คีมปากจิ้งจก", value: "Needle_nose_pliers", id: "11" },
-    { label: "ดินสอ", value: "Pencil", id: "12" },
-    { label: "คีมตัดสายไฟ", value: "Wire_cutting_pliers", id: "13" }
+    { label: "ไขควง", value: "Screwdriver", id: "1", image: "/images/screwdriver.png" },
+    { label: "คีม", value: "Pliers", id: "2", image: "/images/Pliers.png" },
+    { label: "คัตเตอร์", value: "Cutter", id: "3", image: "/images/Cutter.png" },
+    { label: "ลูกบาศก์", value: "Cube", id: "4", image: "/images/Cube.png" },
+    { label: "ปากกาน้ำเงิน", value: "Blue_pen", id: "5", image: "/images/Blue_pen.png" },
+    { label: "ปากกาแดง", value: "Red_pen", id: "6", image: "/images/Red_pen.png" },
+    { label: "ไขควงวัดไฟ", value: "Electrical_screwdriver", id: "7", image: "/images/Electrical_screwdriver.png" },
+    { label: "ยางลบ", value: "Eraser", id: "8", image: "/images/Eraser.png" },
+    { label: "ไขควงปากแบน", value: "Flat_head_screwdriver", id: "9", image: "/images/Flat_head_screwdriver.png" },
+    { label: "ปากกาตัดเส้น", value: "Line_cutting_pen", id: "10", image: "/images/Line_cutting_pen.png" },
+    { label: "คีมปากจิ้งจก", value: "Needle_nose_pliers", id: "11", image: "/images/Needle_nose_pliers.png" },
+    { label: "ดินสอ", value: "Pencil", id: "12", image: "/images/Pencil.png" },
+    { label: "คีมตัดสายไฟ", value: "Wire_cutting_pliers", id: "13", image: "/images/Wire_cutting_pliers.png" }
 ];
 
 export default function ObjectDetectContent() {
@@ -165,29 +165,9 @@ export default function ObjectDetectContent() {
                                 
                             `}
                             >
-                                <div
-                                    className={`
-                                    flex
-                                    items-center
-                                    justify-center
-
-                                    rounded-xl
-
-                                    mb-[clamp(8px,1vh,14px)]
-
-                                    transition-all
-
-                                    w-[clamp(44px,4vw,64px)]
-                                    h-[clamp(44px,4vw,64px)]
-
-                                    ${isActive
-                                            ? 'bg-orange-200'
-                                            : 'bg-slate-50 group-hover:bg-orange-50'
-                                        }
-                                `}
-                                >
+                                <div>
                                     <img
-                                        src="/images/mechanical-arm.png"
+                                        src={obj.image}
                                         alt={obj.label}
                                         className={`
                                         object-contain
