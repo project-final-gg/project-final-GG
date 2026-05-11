@@ -12,6 +12,7 @@ import ActivityLogsContent from './assets/components/contentActivityLogs';
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('1');
     const [isConnected, setIsConnected] = useState(false);
+    const [resetPosition, setResetPosition] = useState(false);
 
     const [currentTime, setCurrentTime] = useState(dayjs().format('HH:mm:ss'));
     const jointRef = useRef<{ handleReset: () => void } | null>(null);
@@ -21,18 +22,26 @@ export default function Dashboard() {
         return () => clearInterval(timer);
     }, []);
 
+    const onClickReset = () => {
+        if (resetPosition) return;
+
+        setResetPosition(true);
+        jointRef.current?.handleReset();
+
+        setTimeout(() => {
+            setResetPosition(false);
+        }, 3000)
+    }
+
     return (
         <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans">
-            {/* Header */}
-            <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 border-b border-gray-200 flex-shrink-0">
+            <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                     <img src="/images/mechanical-arm.png" alt="Logo" className="w-8 h-8 object-contain" />
                     <span className="text-xl font-bold text-slate-800 uppercase tracking-tight">Robotic Arm Control</span>
                 </div>
 
-                {/* ส่วนขวา: Text ล้วนพร้อมตัวคั่น */}
                 <div className="flex items-center gap-3 text-sm font-bold">
-                    {/* Status Section */}
                     <div className="flex items-center gap-2">
                         <div className="relative flex h-2 w-2">
                             {isConnected && (
@@ -45,10 +54,8 @@ export default function Dashboard() {
                         </span>
                     </div>
 
-                    {/* ตัวคั่น | */}
                     <span className="text-slate-300 font-light">|</span>
 
-                    {/* Time Section */}
                     <div className="text-slate-600 font-mono">
                         {currentTime}
                     </div>
@@ -129,7 +136,7 @@ export default function Dashboard() {
                         </div>
 
                         {activeTab === '1' && (
-                            <div className="px-6 pb-6 bg-white flex-shrink-0">
+                            <div className="px-6 pb-6 bg-white">
 
                                 <Divider className="mt-0 mb-4" />
 
@@ -137,10 +144,22 @@ export default function Dashboard() {
 
                                     <Button
                                         icon={<ReloadOutlined />}
-                                        onClick={() => jointRef.current?.handleReset()}
-                                        className="h-11 w-full max-w-[280px] rounded-full !border-orange-400 !text-orange-500 font-bold hover:!bg-orange-50 transition-all shadow-sm"
+                                        onClick={onClickReset}
+                                        disabled={resetPosition}
+                                        className="
+                                        h-11 
+                                        w-full 
+                                        max-w-70 
+                                        rounded-full 
+                                        !border-orange-400 
+                                        !text-orange-500 
+                                        font-bold 
+                                        hover:!text-red-600
+                                        hover:!border-red-600 
+                                        transition-all 
+                                        shadow-sm"
                                     >
-                                        Reset Position
+                                        {resetPosition ? 'Resetting...' : 'Reset Position'}
                                     </Button>
 
                                 </div>
@@ -148,20 +167,13 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
-                <div className="hidden lg:flex flex-col gap-4 w-96 flex-shrink-0 h-full overflow-hidden">
-
-                    {/* AI DETECT */}
+                <div className="hidden lg:flex flex-col gap-4 w-96 h-full overflow-hidden">
                     <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 h-[35%] overflow-hidden">
-
                         <AIDetectContent />
-
                     </div>
 
-                    {/* LOGS */}
                     <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 flex-1 overflow-hidden">
-
                         <ActivityLogsContent />
-
                     </div>
                 </div>
             </main>
