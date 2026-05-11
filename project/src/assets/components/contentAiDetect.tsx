@@ -24,11 +24,33 @@ export default function AIDetectContent() {
         return () => ws.close();
     }, []);
 
-    // ฟังก์ชันจัดการการเปิด-ปิด AI [อ้างอิงจาก DeepCamera.tsx]
+    const enableAI = () => {
+        safeSend({
+            type: "toggle_ai",
+            enable: true,
+        });
+
+        console.log("🧠 AI ON");
+    };
+
+    const disableAI = () => {
+        safeSend({
+            type: "toggle_ai",
+            enable: false,
+        });
+
+        console.log("💤 AI OFF");
+    };
+
     const handleToggleAI = (checked: boolean) => {
+
         setIsAIEnabled(checked);
-        safeSend({ type: "toggle_ai", enable: checked });
-        console.log(checked ? "🧠 AI ON" : "💤 AI OFF");
+
+        if (checked) {
+            enableAI();
+        } else {
+            disableAI();
+        }
     };
 
     return (
@@ -77,8 +99,8 @@ export default function AIDetectContent() {
             {/* ส่วนปุ่ม Switch ด้านล่าง */}
             <div className="bg-slate-50/50 rounded-xl px-4 py-3 flex items-center justify-between border border-slate-100">
                 <span className="text-slate-600 text-xs font-bold">Enable AI Detection</span>
-                <Switch 
-                    checked={isAIEnabled} 
+                <Switch
+                    checked={isAIEnabled}
                     onChange={handleToggleAI}
                     style={{ backgroundColor: isAIEnabled ? '#fb923c' : '#d1d5db' }}
                 />
