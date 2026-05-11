@@ -25,6 +25,15 @@ export default function Sidebar() {
         >
           Deep Camera
         </NavLink>
+
+        <NavLink
+          to="/Dashboard"
+          className={({ isActive }) =>
+            `sidebar-link ${isActive ? "active" : ""}`
+          }
+        >
+          Dashboard
+        </NavLink>
       </nav>
     </aside>
   )
