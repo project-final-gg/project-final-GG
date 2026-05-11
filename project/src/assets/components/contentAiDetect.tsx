@@ -4,7 +4,7 @@ import { Switch } from 'antd';
 export default function AIDetectContent() {
     const [isAIEnabled, setIsAIEnabled] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
-    const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
+    const WS_URL = "wss://project-final-gg.onrender.com/ws/ai";
 
     // ฟังก์ชันสำหรับส่งข้อมูลผ่าน WebSocket
     const safeSend = (obj: object) => {

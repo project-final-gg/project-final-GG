@@ -59,7 +59,7 @@ export default function Dashboard() {
             <main className="flex flex-row flex-1 p-4 gap-4 overflow-hidden">
                 <div className="flex flex-col flex-[1.5] gap-4 h-full overflow-hidden">
                     <div className="h-[45%] w-full bg-white shadow-sm border border-gray-200 rounded-2xl p-4 flex-shrink-0 overflow-hidden">
-                        <DeepCamera />
+                        <DeepCameraContent />
                     </div>
 
                     <div className="flex-1 w-full bg-white shadow-sm border border-gray-200 rounded-2xl flex flex-col overflow-hidden">
@@ -122,7 +122,7 @@ export default function Dashboard() {
 
                 <div className="hidden lg:flex flex-col gap-4 w-96 flex-shrink-0 h-full overflow-hidden">
                     <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 h-[35%] flex-shrink-0 overflow-hidden">
-                        <AIDetect />
+                        <AIDetectContent />
                     </div>
                     <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 flex-1 overflow-hidden">
                         <ActivityLogsContent />
