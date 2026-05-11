@@ -66,18 +66,17 @@ export default function DeepCameraContent() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <h3 className="font-bold text-orange-500 mb-2 uppercase tracking-wider text-[11px]">
+            <h3 className="text-orange-600 rounded-full text-[16px] font-black uppercase tracking-wider mb-2 ml-4 mt-4">
                 Deep Camera
             </h3>
             
             {/* Container สำหรับวิดีโอ */}
-            <div className="flex-1 w-full bg-black rounded-xl overflow-hidden border border-slate-200 relative">
+            <div className="flex-1 ml-4 mr-4 mb-4 bg-black rounded-xl overflow-hidden border border-slate-200 relative">
                 <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    // ใช้ object-cover เพื่อให้ภาพ 640x640 ยืดเต็มกรอบพอดี
                     className="w-full h-full object-cover" 
                 />
                 

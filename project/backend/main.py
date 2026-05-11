@@ -58,6 +58,7 @@ def set_target(cmd: TargetCommand):
 # ===============================
 browser_ws: WebSocket | None = None
 pi_ws: WebSocket | None = None
+ai_ws: WebSocket | None = None
 
 
 # 🔵 PI
@@ -112,3 +113,39 @@ async def ws_browser(ws: WebSocket):
     finally:
         if browser_ws is ws:
             browser_ws = None
+
+@app.websocket("/ws/ai")
+async def ai_ws(ws: WebSocket):
+    global ai_ws
+
+    await ws.accept()
+    print("🧠 ai connected")
+
+    if ai_ws:
+        await ai_ws.close()
+    ai_ws = ws
+
+    try:
+        while True:
+            raw = await ws.receive_text()
+            print("📩 ai ->", raw[:50])
+
+            data = json.load(raw)
+
+            if data["type"] == "toggle_ai":
+
+                enable = data["enable"]
+
+                print("🧠 AI STATUS =", enable)
+
+                mqtt_client.publish(
+                    "robot/ai/enable",
+                    "1" if enable else "0"
+                )
+
+    except WebSocketDisconnect:
+        print("❌ ai disconnected")
+
+    finally:
+        if ai_ws is ws:
+            ai_ws = None
