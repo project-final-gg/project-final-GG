@@ -77,7 +77,7 @@ export default function DeepCameraContent() {
                     autoPlay
                     playsInline
                     muted
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full" 
                 />
                 
                 {/* Overlay แสดงสถานะเล็กน้อย */}
