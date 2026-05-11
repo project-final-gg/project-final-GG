@@ -116,36 +116,25 @@ async def ws_browser(ws: WebSocket):
 
 @app.websocket("/ws/ai")
 async def ws_ai(ws: WebSocket):
-    global ai_ws
+    global ai_ws, pi_ws
 
-    await ws.accept()
-    print("🧠 ai connected")
-
+    await ws.accept() 
+    print("🧠 ai connected") 
+    
     if ai_ws:
         await ai_ws.close()
-    ai_ws = ws
+        ai_ws = ws
 
     try:
         while True:
             raw = await ws.receive_text()
-            print("📩 ai ->", raw[:50])
+            print("📩 ai ->", raw)
 
-            data = json.loads(raw)
-
-            if data.get("type") == "toggle_ai":
-
-                enable = data.get("enable")
-
-                print("🧠 AI STATUS =", enable)
-
-                mqtt_client.publish(
-                    "robot/ai/enable",
-                    "1" if enable else "0"
-                )
+            if pi_ws:
+                await pi_ws.send_text(raw)
 
     except WebSocketDisconnect:
-        print("❌ ai disconnected")
-
+        print("❌ browser disconnected")
     finally:
         if ai_ws is ws:
             ai_ws = None
