@@ -140,7 +140,7 @@ export default function DeepCamera() {
     { label: "ปากกาแดง", value: "Red_pen" },
     { label: "ไขควงวัดไฟ", value: "Electrical_screwdriver" },
     { label: "ยางลบ", value: "Eraser" },
-    { label: "ไขควงปากแบน", value: "Flat-head_screwdriver" },
+    { label: "ไขควงปากแบน", value: "Flat_head_screwdriver" },
     { label: "ปากกาตัดเส้น", value: "Line_cutting_pen" },
     { label: "คีมปากจิ้งจก", value: "Needle_nose_pliers" },
     { label: "ดินสอ", value: "Pencil" },

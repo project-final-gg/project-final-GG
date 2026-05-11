@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"
 import Sidebar from "./sidebar"
 import DeepCamera from "./assets/components/DeepCamera"
 import LogAlert from "./assets/components/LogAlert"
+import Dashboard from "./dashboard"
 
 function Control() {
   return (
@@ -21,20 +22,32 @@ function DeepCamPage() {
   )
 }
 
-function App() {
+function DashboardPage() {
   return (
-    <div className="layout">
-      <Sidebar />
+    <div>
+      <Dashboard />
+    </div>
+  )
+}
 
-      <main className="main-area">
+function App() {
+  const location = useLocation();
+  const isDashboard = location.pathname.toLowerCase() === "/dashboard";
+
+  return (
+    <div className={isDashboard ? "" : "layout"}>
+      {!isDashboard && <Sidebar />}
+
+      <main className={isDashboard ? "" : "main-area"}>
         <Routes>
-          <Route path="/" element={<Navigate to="/Control" replace />} />
-          <Route path="/Control" element={<Control />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />   
+          <Route path="/dashboard" element={<DashboardPage />} />         
+          <Route path="/control" element={<Control />} />
           <Route path="/deepcam" element={<DeepCamPage />} />
         </Routes>
       </main>
     </div>
-  )
+  );
 }
 
 export default App

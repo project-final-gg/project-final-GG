@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Control from "./Control";
 import { Modal, Table, Tag, DatePicker, Space, Empty } from "antd";
 import { Dayjs } from "dayjs";
-import { db } from "../../firebase"; // ตรวจสอบ path ไฟล์ firebase ของคุณ
+import { db } from "../../firebase"; 
 import {
   collection,
   addDoc,
