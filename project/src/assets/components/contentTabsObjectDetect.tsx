@@ -21,6 +21,7 @@ export default function ObjectDetectContent() {
     const [activeObject, setActiveObject] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
+    const API_URL = "https://project-final-gg.onrender.com";
 
     // เชื่อมต่อ WebSocket
     useEffect(() => {
@@ -30,14 +31,25 @@ export default function ObjectDetectContent() {
         return () => ws.close();
     }, []);
 
-    // ฟังก์ชันส่งคำสั่งเลือกวัตถุ
-    const handleSelectObject = (value: string) => {
-        const newTarget = activeObject === value ? "stop" : value;
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: "set_target", data: newTarget }));
-            setActiveObject(newTarget === "stop" ? null : value);
-        }
+    const setTarget = async (name: string) => {
+
+        setActiveObject(name);
+        await fetch(`${API_URL}/set_target`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ target: name }),
+        });
+
+        console.log("🎯 " + name);
+
+        setTimeout(() => {
+            setActiveObject(null);
+        }, 3000);
     };
+
+
 
     return (
         <div className="flex flex-col w-full h-full overflow-hidden">
@@ -59,13 +71,13 @@ export default function ObjectDetectContent() {
                     {Object_List.map((obj) => {
                         const isActive = activeObject === obj.value;
                         return (
-                            <div 
+                            <div
                                 key={obj.id}
-                                onClick={() => handleSelectObject(obj.value)}
+                                onClick={() => setTarget(obj.value)}
                                 className={`
                                     cursor-pointer group flex flex-col items-center p-2 rounded-xl border transition-all duration-200
-                                    ${isActive 
-                                        ? 'border-orange-500 bg-orange-50 shadow-sm transform scale-[1.02]' 
+                                    ${isActive
+                                        ? 'border-orange-500 bg-orange-50 shadow-sm transform scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-orange-200'
                                     }
                                 `}
@@ -75,8 +87,8 @@ export default function ObjectDetectContent() {
                                     w-9 h-9 rounded-lg mb-1 flex items-center justify-center overflow-hidden transition-colors
                                     ${isActive ? 'bg-orange-200' : 'bg-slate-50 group-hover:bg-orange-50'}
                                 `}>
-                                    <img 
-                                        src="/images/mechanical-arm.png" 
+                                    <img
+                                        src="/images/mechanical-arm.png"
                                         alt={obj.label}
                                         className={`w-6 h-6 object-contain ${isActive ? 'brightness-110' : 'grayscale-[0.5]'}`}
                                     />
