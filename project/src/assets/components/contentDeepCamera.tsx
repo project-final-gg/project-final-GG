@@ -2,14 +2,39 @@ import { useEffect, useRef } from 'react';
 import { notification } from 'antd';
 
 export default function DeepCameraContent() {
-    const [api, contextHolder] = notification.useNotification();
+    const [api, contextHolder] = notification.useNotification()
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
+    const reconnectCamera = useRef<number | null>(null);
+    const isUnmounting = useRef(false);
+    const hasConnected = useRef(false);
     const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
 
+    const reconnect = () => {
+
+        if (isUnmounting.current) return;
+
+        if (reconnectCamera.current) {
+            clearTimeout(reconnectCamera.current);
+        }
+
+        reconnectCamera.current = setTimeout(() => {
+
+            if (isUnmounting.current) return;
+
+            console.log("🔄 Reconnecting camera...");
+
+            connect();
+
+        }, 3000);
+    };
+
     const connect = () => {
+
+        hasConnected.current = false;
+        
         if (pcRef.current) pcRef.current.close();
         if (wsRef.current) wsRef.current.close();
 
@@ -34,16 +59,21 @@ export default function DeepCameraContent() {
             if (videoRef.current) {
                 videoRef.current.srcObject = event.streams[0];
             }
-        };
 
-        api.success({
-            key: 'camera-status',
-            message: 'เชื่อมต่อกล้องสำเร็จ',
-            description: 'ภาพจากกล้องพร้อมใช้งานแล้ว',
-            placement: 'topRight',
-            duration: 3,
-            className: "rounded-2xl border border-green-600"
-        });
+            if (!hasConnected.current) {
+
+                hasConnected.current = true;
+
+                api.success({
+                    key: 'camera-status',
+                    message: 'เชื่อมต่อกล้องสำเร็จ',
+                    description: 'ภาพจากกล้องพร้อมใช้งานแล้ว',
+                    placement: 'topRight',
+                    duration: 3,
+                    className: "rounded-2xl border border-green-600"
+                });
+            }
+        }
 
         pc.onicecandidate = (event) => {
             if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -85,15 +115,31 @@ export default function DeepCameraContent() {
                 duration: 3,
                 className: "rounded-2xl border border-red-600"
             });
-        }
+
+            reconnect();
+        };
+
+        ws.onerror = () => {
+            console.log("WebSocket Error");
+        };
     };
 
     useEffect(() => {
+
         connect();
+
         return () => {
+
+            isUnmounting.current = true;
+
+            if (reconnectCamera.current) {
+                clearTimeout(reconnectCamera.current);
+            }
+
             pcRef.current?.close();
             wsRef.current?.close();
         };
+
     }, []);
 
     return (
