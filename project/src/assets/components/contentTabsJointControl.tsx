@@ -26,7 +26,6 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
             try {
                 const docRef = doc(db, "robot_status", "current");
                 const docSnap = await getDoc(docRef);
-                let latestJoints = initialJointsConfig;
 
                 if (docSnap.exists()) {
                     const latestData = docSnap.data();
@@ -36,9 +35,6 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
                     }));
                     setJoints(updatedJoints);
                 }
-                for (const joint of latestJoints) {
-                sendData(joint.name, joint.value, -1); 
-            }
             } catch (error) {
                 console.error("Error fetching latest status:", error);
             } finally {
@@ -197,7 +193,11 @@ export default function JointControlsContent({ onRef }: JointControlsContentProp
                             </span>
                         </div>
 
-                        <div className="w-full px-[clamp(4px,1vw,20px)]">
+                        <div className="w-full px-[clamp(4px,1vw,20px)]"
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        >
+
                             <Slider
                                 min={0}
                                 max={joint.max}
