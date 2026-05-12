@@ -7,41 +7,43 @@ export default function DeepCameraContent() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
-    const reconnectCamera = useRef<number | null>(null);
+    const reconnectCamera = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const connectionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isUnmounting = useRef(false);
     const hasConnected = useRef(false);
+
     const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
 
     const reconnect = () => {
-
         if (isUnmounting.current) return;
 
+        // เคลียร์ timer เดิมทิ้งก่อนเริ่มสร้างอันใหม่
         if (reconnectCamera.current) {
             clearTimeout(reconnectCamera.current);
         }
 
-        reconnectCamera.current = setTimeout(() => {
-
+        console.log("🔄 Reconnecting camera in 3s...");
+        reconnectCamera.current = window.setTimeout(() => {
             if (isUnmounting.current) return;
-
-            console.log("🔄 Reconnecting camera...");
-
             connect();
-
         }, 3000);
     };
 
     const connect = () => {
-
+        console.log("🚀 Attempting to connect to camera...");
         hasConnected.current = false;
-        
+
+        // Cleanup ก่อนเชื่อมต่อใหม่
         if (pcRef.current) pcRef.current.close();
-        if (wsRef.current) wsRef.current.close();
+        if (wsRef.current) {
+            wsRef.current.onclose = null; // ป้องกัน infinite loop จากการสั่ง close เอง
+            wsRef.current.close();
+        }
 
         api.warning({
             key: 'camera-status',
             message: 'กำลังเชื่อมต่อกล้อง',
-            description: 'กำลังเชื่อมต่อกล้อง...',
+            description: 'กำลังพยายามเชื่อมต่อกับ Server...',
             placement: 'topRight',
             duration: 0,
             className: "rounded-2xl border border-orange-200"
@@ -61,9 +63,8 @@ export default function DeepCameraContent() {
             }
 
             if (!hasConnected.current) {
-
                 hasConnected.current = true;
-
+                console.log("🎬 STREAM RECEIVED: ได้รับสัญญาณภาพจากกล้องแล้ว");
                 api.success({
                     key: 'camera-status',
                     message: 'เชื่อมต่อกล้องสำเร็จ',
@@ -73,7 +74,7 @@ export default function DeepCameraContent() {
                     className: "rounded-2xl border border-green-600"
                 });
             }
-        }
+        };
 
         pc.onicecandidate = (event) => {
             if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -84,7 +85,19 @@ export default function DeepCameraContent() {
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
 
+        // ตั้งเวลา Timeout หากต่อไม่ติดภายใน 5 วินาที
+        if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
+        connectionTimeout.current = window.setTimeout(() => {
+            if (ws.readyState !== WebSocket.OPEN) {
+                console.log("⏳ Connection timeout - triggering retry");
+                ws.close();
+            }
+        }, 5000);
+
         ws.onopen = async () => {
+            if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
+            console.log("✅ WebSocket Connected");
+
             pc.addTransceiver("video", { direction: "recvonly" });
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
@@ -106,40 +119,45 @@ export default function DeepCameraContent() {
             }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
+            if (isUnmounting.current) return;
+
+            console.log("🔌 WebSocket Closed:", event.reason);
+            if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
+
             api.error({
                 key: 'camera-status',
                 message: 'กล้องถูกตัดการเชื่อมต่อ',
-                description: 'ภาพถูกตัดการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง...',
+                description: 'ไม่พบสัญญาณจากกล้อง กำลังพยายามเชื่อมต่อใหม่...',
                 placement: 'topRight',
-                duration: 3,
+                duration: 2,
                 className: "rounded-2xl border border-red-600"
             });
 
             reconnect();
         };
 
-        ws.onerror = () => {
-            console.log("WebSocket Error");
+        ws.onerror = (err) => {
+            console.error("❌ WebSocket Error:", err);
+            // ปล่อยให้ onclose เป็นคนจัดการ reconnect
         };
     };
 
     useEffect(() => {
-
+        isUnmounting.current = false;
         connect();
 
         return () => {
-
             isUnmounting.current = true;
-
-            if (reconnectCamera.current) {
-                clearTimeout(reconnectCamera.current);
-            }
+            if (reconnectCamera.current) clearTimeout(reconnectCamera.current);
+            if (connectionTimeout.current) clearTimeout(connectionTimeout.current);
 
             pcRef.current?.close();
-            wsRef.current?.close();
+            if (wsRef.current) {
+                wsRef.current.onclose = null;
+                wsRef.current.close();
+            }
         };
-
     }, []);
 
     return (
@@ -160,7 +178,9 @@ export default function DeepCameraContent() {
 
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-16 text-white font-bold uppercase">Live</span>
+                    <span className="text-[12px] text-white font-bold uppercase">
+                        {hasConnected.current ? 'Live' : 'Offline'}
+                    </span>
                 </div>
             </div>
         </div>
