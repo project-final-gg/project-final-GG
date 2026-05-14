@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Switch } from 'antd';
+import { Switch, notification } from 'antd';
 
 export default function AIDetectContent() {
     const [isAIEnabled, setIsAIEnabled] = useState(false);
+    const [api, contextHolder] = notification.useNotification();
+
     const wsRef = useRef<WebSocket | null>(null);
     const WS_URL = "wss://project-final-gg.onrender.com/ws/ai";
+    
 
     // ฟังก์ชันสำหรับส่งข้อมูลผ่าน WebSocket
     const safeSend = (obj: object) => {
@@ -64,13 +67,32 @@ export default function AIDetectContent() {
 
         if (checked) {
             enableAI();
+
+            api.success({
+                message: 'Enable AI',
+                description: 'AI Detection has been enabled.',
+                placement: 'topRight',
+                duration: 3,
+                className:"rounded-2xl border border-green-600"
+            });
+
         } else {
             disableAI();
+
+            api.error({
+                message: 'Disable AI',
+                description: 'AI Detection has been disabled.',
+                placement: 'topRight',
+                duration: 3,
+                className:"rounded-2xl border border-red-600"
+            });
+
         }
     };
 
     return (
         <div className="flex flex-col w-full h-full font-sans">
+            {contextHolder}
             <h3 className="text-orange-600 rounded-full text-[16px] font-black uppercase tracking-wider mb-2">
                 AI Detection
             </h3>

@@ -1,14 +1,51 @@
 import { useEffect, useRef } from 'react';
+import { notification } from 'antd';
 
 export default function DeepCameraContent() {
+    const [api, contextHolder] = notification.useNotification()
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
+    const reconnectCamera = useRef<number | null>(null);
+    const isUnmounting = useRef(false);
+    const hasConnected = useRef(false);
     const WS_URL = "wss://project-final-gg.onrender.com/ws/browser";
 
+    const reconnect = () => {
+
+        if (isUnmounting.current) return;
+
+        if (reconnectCamera.current) {
+            clearTimeout(reconnectCamera.current);
+        }
+
+        reconnectCamera.current = setTimeout(() => {
+
+            if (isUnmounting.current) return;
+
+            console.log("🔄 Reconnecting camera...");
+
+            connect();
+
+        }, 3000);
+    };
+
     const connect = () => {
+
+        hasConnected.current = false;
+        
         if (pcRef.current) pcRef.current.close();
         if (wsRef.current) wsRef.current.close();
+
+        api.warning({
+            key: 'camera-status',
+            message: 'กำลังเชื่อมต่อกล้อง',
+            description: 'กำลังเชื่อมต่อกล้อง...',
+            placement: 'topRight',
+            duration: 0,
+            className: "rounded-2xl border border-orange-200"
+        });
 
         const pc = new RTCPeerConnection({
             iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -22,7 +59,21 @@ export default function DeepCameraContent() {
             if (videoRef.current) {
                 videoRef.current.srcObject = event.streams[0];
             }
-        };
+
+            if (!hasConnected.current) {
+
+                hasConnected.current = true;
+
+                api.success({
+                    key: 'camera-status',
+                    message: 'เชื่อมต่อกล้องสำเร็จ',
+                    description: 'ภาพจากกล้องพร้อมใช้งานแล้ว',
+                    placement: 'topRight',
+                    duration: 3,
+                    className: "rounded-2xl border border-green-600"
+                });
+            }
+        }
 
         pc.onicecandidate = (event) => {
             if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -88,18 +139,46 @@ export default function DeepCameraContent() {
                 }
             }
         };
+
+        ws.onclose = () => {
+            api.error({
+                key: 'camera-status',
+                message: 'กล้องถูกตัดการเชื่อมต่อ',
+                description: 'ภาพถูกตัดการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง...',
+                placement: 'topRight',
+                duration: 3,
+                className: "rounded-2xl border border-red-600"
+            });
+
+            reconnect();
+        };
+
+        ws.onerror = () => {
+            console.log("WebSocket Error");
+        };
     };
 
     useEffect(() => {
+
         connect();
+
         return () => {
+
+            isUnmounting.current = true;
+
+            if (reconnectCamera.current) {
+                clearTimeout(reconnectCamera.current);
+            }
+
             pcRef.current?.close();
             wsRef.current?.close();
         };
+
     }, []);
 
     return (
         <div className="flex flex-col w-full h-full">
+            {contextHolder}
             <h3 className="text-orange-600 rounded-full text-[16px] font-black uppercase tracking-wider mb-2 ml-4 mt-4">
                 Deep Camera
             </h3>
@@ -114,8 +193,8 @@ export default function DeepCameraContent() {
                 />
 
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-[9px] text-white font-bold uppercase">Live</span>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-16 text-white font-bold uppercase">Live</span>
                 </div>
             </div>
         </div>

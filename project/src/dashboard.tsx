@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import { ConfigProvider, Tabs, Divider, Button } from 'antd';
+import { ConfigProvider, Tabs, Divider, Button, notification } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 
 import JointControlsContent from './assets/components/contentTabsJointControl';
@@ -13,6 +13,7 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('1');
     const [isConnected, setIsConnected] = useState(false);
     const [resetPosition, setResetPosition] = useState(false);
+    const [api, contextHolder] = notification.useNotification();
 
     const [currentTime, setCurrentTime] = useState(dayjs().format('HH:mm:ss'));
     const jointRef = useRef<{ handleReset: () => void } | null>(null);
@@ -30,8 +31,6 @@ export default function Dashboard() {
                 const res = await fetch(`${API_URL}/status`);
                 const data = await res.json();
 
-                console.log("Robotic Arm Data: ", data);
-
                 setIsConnected(data.esp32_status === "online");
             } catch (err) {
                 console.error("Falied to fetch Robotic Arm Status");
@@ -42,7 +41,7 @@ export default function Dashboard() {
 
         fetchStatus();
 
-        const interval = setInterval(fetchStatus, 3000);
+        const interval = setInterval(fetchStatus, 10000);
 
         return () => clearInterval(interval);
     }, []);
@@ -53,6 +52,14 @@ export default function Dashboard() {
         setResetPosition(true);
         jointRef.current?.handleReset();
 
+        api.warning({
+            message: 'Infomation',
+            description: `กำลังรีเซ็ตตำแหน่งแขนกล กรุณารอสักครู่...`,
+            placement: 'topRight',
+            duration: 3,
+            className:"rounded-2xl border border-orange-200"
+        })
+
         setTimeout(() => {
             setResetPosition(false);
         }, 3000)
@@ -60,6 +67,7 @@ export default function Dashboard() {
 
     return (
         <div className="h-screen bg-slate-50 flex flex-col overflow-hidden font-sans">
+            {contextHolder}
             <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                     <img src="/images/mechanical-arm.png" alt="Logo" className="w-8 h-8 object-contain" />
