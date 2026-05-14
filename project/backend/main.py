@@ -1,16 +1,22 @@
 import json
 import time
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
+from fastapi import WebSocket
+from fastapi import WebSocketDisconnect
+
 from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
+
 import paho.mqtt.client as mqtt
+
 
 app = FastAPI()
 
-# ===============================
+# =====================================
 # CORS
-# ===============================
+# =====================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,9 +25,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===============================
-# MQTT CONFIG
-# ===============================
+# =====================================
+# MQTT
+# =====================================
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 
@@ -29,62 +35,103 @@ MQTT_TOPIC_PREFIX = "robot/control/"
 MQTT_TARGET_TOPIC = "robot/command/target"
 MQTT_STATUS_TOPIC = "robot/status"
 
-# ===============================
+# =====================================
 # GLOBAL STATE
-# ===============================
+# =====================================
+browser_ws = None
+pi_ws = None
+ai_ws = None
+
 esp32_status = {
     "status": "offline"
 }
 
-# heartbeat
 last_status_time = 0
 STATUS_TIMEOUT = 5
 
-browser_ws: WebSocket | None = None
-pi_ws: WebSocket | None = None
-ai_ws: WebSocket | None = None
-
-# ===============================
-# LOG SYSTEM
-# ===============================
+# =====================================
+# LOG
+# =====================================
 logs = []
 MAX_LOGS = 200
 
 
 def add_log(log_type, source, message):
 
-    timestamp = time.strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    log_item = {
-
-        "time": timestamp,
-
-        "type": log_type,
-
-        "source": source,
-
-        "message": message
-    }
-
-    print(
+    msg = (
         f"[{timestamp}] "
         f"[{log_type}] "
         f"[{source}] "
         f"{message}"
     )
 
-    logs.append(log_item)
+    print(msg)
 
-    # keep latest logs only
+    logs.append({
+        "time": timestamp,
+        "type": log_type,
+        "source": source,
+        "message": message
+    })
+
     if len(logs) > MAX_LOGS:
         logs.pop(0)
 
 
-# ===============================
+# =====================================
+# SAFE WS HELPERS
+# =====================================
+async def safe_close(ws, name="ws"):
+
+    if not ws:
+        return
+
+    try:
+
+        await ws.close()
+
+        add_log(
+            "ws",
+            name,
+            "closed"
+        )
+
+    except Exception as e:
+
+        add_log(
+            "error",
+            name,
+            f"close failed -> {e}"
+        )
+
+
+async def safe_send(ws, data, name="ws"):
+
+    if not ws:
+        return False
+
+    try:
+
+        await ws.send_text(data)
+
+        return True
+
+    except Exception as e:
+
+        add_log(
+            "error",
+            name,
+            f"send failed -> {e}"
+        )
+
+        return False
+
+
+# =====================================
 # MQTT
-# ===============================
+# =====================================
 mqtt_client = mqtt.Client()
 
 
@@ -110,6 +157,7 @@ def on_message(client, userdata, msg):
     global last_status_time
 
     topic = msg.topic
+
     payload = msg.payload.decode()
 
     add_log(
@@ -118,15 +166,10 @@ def on_message(client, userdata, msg):
         payload
     )
 
-    # ===========================
-    # ESP32 STATUS HEARTBEAT
-    # ===========================
     if topic == MQTT_STATUS_TOPIC:
 
-        # update heartbeat time
         last_status_time = time.time()
 
-        # update internal state
         esp32_status["status"] = payload
 
         add_log(
@@ -139,30 +182,40 @@ def on_message(client, userdata, msg):
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 
-mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+mqtt_client.connect(
+    MQTT_BROKER,
+    MQTT_PORT,
+    60
+)
+
 mqtt_client.loop_start()
 
-# ===============================
+# =====================================
 # API MODELS
-# ===============================
+# =====================================
 class ServoCommand(BaseModel):
+
     joint: str
     angle: int
 
 
 class TargetCommand(BaseModel):
+
     target: str
 
 
-# ===============================
+# =====================================
 # API ROUTES
-# ===============================
+# =====================================
 @app.post("/update")
 def update_servo(cmd: ServoCommand):
 
     topic = f"{MQTT_TOPIC_PREFIX}{cmd.joint}"
 
-    mqtt_client.publish(topic, str(cmd.angle))
+    mqtt_client.publish(
+        topic,
+        str(cmd.angle)
+    )
 
     add_log(
         "command",
@@ -178,7 +231,10 @@ def update_servo(cmd: ServoCommand):
 @app.post("/set_target")
 def set_target(cmd: TargetCommand):
 
-    mqtt_client.publish(MQTT_TARGET_TOPIC, cmd.target)
+    mqtt_client.publish(
+        MQTT_TARGET_TOPIC,
+        cmd.target
+    )
 
     add_log(
         "target",
@@ -191,30 +247,12 @@ def set_target(cmd: TargetCommand):
     }
 
 
-@app.get("/status")
-def get_status():
-
-    current_status = esp32_status["status"]
-
-    # ===========================
-    # TIMEOUT CHECK
-    # ===========================
-    if time.time() - last_status_time > STATUS_TIMEOUT:
-        current_status = "offline"
-
-    return {
-        "esp32_status": current_status
-    }
-
-
-# ===============================
-# HEALTH CHECK
-# ===============================
 @app.get("/health")
 def health():
 
     esp_online = (
-        time.time() - last_status_time <= STATUS_TIMEOUT
+        time.time() - last_status_time
+        <= STATUS_TIMEOUT
     )
 
     return {
@@ -227,42 +265,19 @@ def health():
             else "offline"
         ),
 
-        "mqtt": "connected",
-
         "browser_ws": browser_ws is not None,
-
         "pi_ws": pi_ws is not None,
-
         "ai_ws": ai_ws is not None,
-
-        "last_heartbeat_sec": round(
-            time.time() - last_status_time,
-            2
-        )
     }
 
 
-# ===============================
-# LOGS
-# ===============================
-@app.get("/logs")
-def get_logs():
-
-    return {
-
-        "count": len(logs),
-
-        "logs": logs
-    }
-
-
-# ===============================
+# =====================================
 # PI SOCKET
-# ===============================
+# =====================================
 @app.websocket("/ws/pi")
 async def ws_pi(ws: WebSocket):
 
-    global pi_ws, browser_ws
+    global pi_ws
 
     await ws.accept()
 
@@ -272,10 +287,12 @@ async def ws_pi(ws: WebSocket):
         "connected"
     )
 
-    if pi_ws:
-        await pi_ws.close()
+    old_ws = pi_ws
 
     pi_ws = ws
+
+    if old_ws and old_ws != ws:
+        await safe_close(old_ws, "old-pi")
 
     try:
 
@@ -286,33 +303,44 @@ async def ws_pi(ws: WebSocket):
             add_log(
                 "ws",
                 "pi",
-                f"message -> {raw[:50]}"
+                raw[:50]
             )
 
-            if browser_ws:
-                await browser_ws.send_text(raw)
+            await safe_send(
+                browser_ws,
+                raw,
+                "browser"
+            )
 
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "pi",
-            "disconnected"
+            "disconnect"
+        )
+
+    except Exception as e:
+
+        add_log(
+            "error",
+            "pi",
+            str(e)
         )
 
     finally:
 
-        if pi_ws is ws:
+        if pi_ws == ws:
             pi_ws = None
 
 
-# ===============================
+# =====================================
 # BROWSER SOCKET
-# ===============================
+# =====================================
 @app.websocket("/ws/browser")
 async def ws_browser(ws: WebSocket):
 
-    global browser_ws, pi_ws
+    global browser_ws
 
     await ws.accept()
 
@@ -322,10 +350,15 @@ async def ws_browser(ws: WebSocket):
         "connected"
     )
 
-    if browser_ws:
-        await browser_ws.close()
+    old_ws = browser_ws
 
     browser_ws = ws
+
+    if old_ws and old_ws != ws:
+        await safe_close(
+            old_ws,
+            "old-browser"
+        )
 
     try:
 
@@ -336,33 +369,44 @@ async def ws_browser(ws: WebSocket):
             add_log(
                 "ws",
                 "browser",
-                f"message -> {raw[:50]}"
+                raw[:50]
             )
 
-            if pi_ws:
-                await pi_ws.send_text(raw)
+            await safe_send(
+                pi_ws,
+                raw,
+                "pi"
+            )
 
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "browser",
-            "disconnected"
+            "disconnect"
+        )
+
+    except Exception as e:
+
+        add_log(
+            "error",
+            "browser",
+            str(e)
         )
 
     finally:
 
-        if browser_ws is ws:
+        if browser_ws == ws:
             browser_ws = None
 
 
-# ===============================
+# =====================================
 # AI SOCKET
-# ===============================
+# =====================================
 @app.websocket("/ws/ai")
 async def ws_ai(ws: WebSocket):
 
-    global ai_ws, pi_ws
+    global ai_ws
 
     await ws.accept()
 
@@ -372,10 +416,15 @@ async def ws_ai(ws: WebSocket):
         "connected"
     )
 
-    if ai_ws:
-        await ai_ws.close()
+    old_ws = ai_ws
 
     ai_ws = ws
+
+    if old_ws and old_ws != ws:
+        await safe_close(
+            old_ws,
+            "old-ai"
+        )
 
     try:
 
@@ -386,21 +435,32 @@ async def ws_ai(ws: WebSocket):
             add_log(
                 "ws",
                 "ai",
-                f"message -> {raw[:50]}"
+                raw[:50]
             )
 
-            if pi_ws:
-                await pi_ws.send_text(raw)
+            await safe_send(
+                pi_ws,
+                raw,
+                "pi"
+            )
 
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "ai",
-            "disconnected"
+            "disconnect"
+        )
+
+    except Exception as e:
+
+        add_log(
+            "error",
+            "ai",
+            str(e)
         )
 
     finally:
 
-        if ai_ws is ws:
+        if ai_ws == ws:
             ai_ws = None
