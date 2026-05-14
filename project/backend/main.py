@@ -270,6 +270,24 @@ def health():
         "ai_ws": ai_ws is not None,
     }
 
+# =====================================
+# STATUS
+# =====================================
+@app.get("/status")
+def get_status():
+
+    current_status = esp32_status["status"]
+
+    # timeout check
+    if (
+        time.time() - last_status_time
+        > STATUS_TIMEOUT
+    ):
+        current_status = "offline"
+
+    return {
+        "esp32_status": current_status
+    }
 
 # =====================================
 # PI SOCKET
