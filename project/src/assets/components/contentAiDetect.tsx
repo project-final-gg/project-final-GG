@@ -69,7 +69,7 @@ export default function AIDetectContent() {
             enableAI();
 
             api.success({
-                message: 'Enable AI',
+                title: 'Enable AI',
                 description: 'AI Detection has been enabled.',
                 placement: 'topRight',
                 duration: 3,
@@ -80,7 +80,7 @@ export default function AIDetectContent() {
             disableAI();
 
             api.error({
-                message: 'Disable AI',
+                title: 'Disable AI',
                 description: 'AI Detection has been disabled.',
                 placement: 'topRight',
                 duration: 3,
