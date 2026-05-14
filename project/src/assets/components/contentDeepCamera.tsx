@@ -41,17 +41,51 @@ export default function DeepCameraContent() {
         };
 
         ws.onmessage = async (event) => {
+
             const msg = JSON.parse(event.data);
+
+            // =========================
+            // PI CONNECTED
+            // =========================
+            if (msg.type === "pi-connected") {
+
+                console.log("PI CONNECTED");
+
+                connect();
+
+                return;
+            }
+
             if (msg.type === "answer") {
+
                 await pc.setRemoteDescription(msg.data);
+
                 remoteReady = true;
-                for (const c of iceQueue) { try { await pc.addIceCandidate(c); } catch { } }
+
+                for (const c of iceQueue) {
+
+                    try {
+                        await pc.addIceCandidate(c);
+                    } catch { }
+                }
+
                 iceQueue = [];
             }
+
             if (msg.type === "candidate") {
+
                 const candidate = new RTCIceCandidate(msg.data);
-                if (!remoteReady) iceQueue.push(candidate);
-                else { try { await pc.addIceCandidate(candidate); } catch { } }
+
+                if (!remoteReady) {
+
+                    iceQueue.push(candidate);
+
+                } else {
+
+                    try {
+                        await pc.addIceCandidate(candidate);
+                    } catch { }
+                }
             }
         };
     };
@@ -69,16 +103,16 @@ export default function DeepCameraContent() {
             <h3 className="text-orange-600 rounded-full text-[16px] font-black uppercase tracking-wider mb-2 ml-4 mt-4">
                 Deep Camera
             </h3>
-            
+
             <div className="flex-1 ml-4 mr-4 mb-4 bg-black rounded-xl overflow-hidden border border-slate-200 relative">
                 <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-full h-full" 
+                    className="w-full h-full"
                 />
-                
+
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md">
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
                     <span className="text-[9px] text-white font-bold uppercase">Live</span>

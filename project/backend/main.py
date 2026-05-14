@@ -1,4 +1,6 @@
 import json
+import time
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -34,9 +36,51 @@ esp32_status = {
     "status": "offline"
 }
 
+# heartbeat
+last_status_time = 0
+STATUS_TIMEOUT = 5
+
 browser_ws: WebSocket | None = None
 pi_ws: WebSocket | None = None
 ai_ws: WebSocket | None = None
+
+# ===============================
+# LOG SYSTEM
+# ===============================
+logs = []
+MAX_LOGS = 200
+
+
+def add_log(log_type, source, message):
+
+    timestamp = time.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    log_item = {
+
+        "time": timestamp,
+
+        "type": log_type,
+
+        "source": source,
+
+        "message": message
+    }
+
+    print(
+        f"[{timestamp}] "
+        f"[{log_type}] "
+        f"[{source}] "
+        f"{message}"
+    )
+
+    logs.append(log_item)
+
+    # keep latest logs only
+    if len(logs) > MAX_LOGS:
+        logs.pop(0)
+
 
 # ===============================
 # MQTT
@@ -46,26 +90,50 @@ mqtt_client = mqtt.Client()
 
 def on_connect(client, userdata, flags, rc):
 
-    print("✅ MQTT connected")
+    add_log(
+        "mqtt",
+        "system",
+        "connected"
+    )
 
     client.subscribe(MQTT_STATUS_TOPIC)
 
-    print(f"📡 Subscribed -> {MQTT_STATUS_TOPIC}")
+    add_log(
+        "mqtt",
+        "system",
+        f"subscribed -> {MQTT_STATUS_TOPIC}"
+    )
 
 
 def on_message(client, userdata, msg):
 
+    global last_status_time
+
     topic = msg.topic
     payload = msg.payload.decode()
 
-    print(f"📩 MQTT {topic} -> {payload}")
+    add_log(
+        "mqtt",
+        topic,
+        payload
+    )
 
-    # ESP32 STATUS
+    # ===========================
+    # ESP32 STATUS HEARTBEAT
+    # ===========================
     if topic == MQTT_STATUS_TOPIC:
 
+        # update heartbeat time
+        last_status_time = time.time()
+
+        # update internal state
         esp32_status["status"] = payload
 
-        print(f"🤖 ESP32 STATUS : {payload}")
+        add_log(
+            "status",
+            "esp32",
+            payload
+        )
 
 
 mqtt_client.on_connect = on_connect
@@ -96,7 +164,11 @@ def update_servo(cmd: ServoCommand):
 
     mqtt_client.publish(topic, str(cmd.angle))
 
-    print(f"🚀 SEND {topic} -> {cmd.angle}")
+    add_log(
+        "command",
+        cmd.joint,
+        f"angle -> {cmd.angle}"
+    )
 
     return {
         "status": "sent"
@@ -108,7 +180,11 @@ def set_target(cmd: TargetCommand):
 
     mqtt_client.publish(MQTT_TARGET_TOPIC, cmd.target)
 
-    print(f"🎯 TARGET -> {cmd.target}")
+    add_log(
+        "target",
+        "ai",
+        cmd.target
+    )
 
     return {
         "status": "sent"
@@ -118,8 +194,65 @@ def set_target(cmd: TargetCommand):
 @app.get("/status")
 def get_status():
 
+    current_status = esp32_status["status"]
+
+    # ===========================
+    # TIMEOUT CHECK
+    # ===========================
+    if time.time() - last_status_time > STATUS_TIMEOUT:
+        current_status = "offline"
+
     return {
-        "esp32_status": esp32_status["status"]
+        "esp32_status": current_status
+    }
+
+
+# ===============================
+# HEALTH CHECK
+# ===============================
+@app.get("/health")
+def health():
+
+    esp_online = (
+        time.time() - last_status_time <= STATUS_TIMEOUT
+    )
+
+    return {
+
+        "api": "online",
+
+        "esp32": (
+            "online"
+            if esp_online
+            else "offline"
+        ),
+
+        "mqtt": "connected",
+
+        "browser_ws": browser_ws is not None,
+
+        "pi_ws": pi_ws is not None,
+
+        "ai_ws": ai_ws is not None,
+
+        "last_heartbeat_sec": round(
+            time.time() - last_status_time,
+            2
+        )
+    }
+
+
+# ===============================
+# LOGS
+# ===============================
+@app.get("/logs")
+def get_logs():
+
+    return {
+
+        "count": len(logs),
+
+        "logs": logs
     }
 
 
@@ -133,7 +266,11 @@ async def ws_pi(ws: WebSocket):
 
     await ws.accept()
 
-    print("🟢 pi connected")
+    add_log(
+        "ws",
+        "pi",
+        "connected"
+    )
 
     if pi_ws:
         await pi_ws.close()
@@ -146,14 +283,22 @@ async def ws_pi(ws: WebSocket):
 
             raw = await ws.receive_text()
 
-            print("📩 pi ->", raw[:50])
+            add_log(
+                "ws",
+                "pi",
+                f"message -> {raw[:50]}"
+            )
 
             if browser_ws:
                 await browser_ws.send_text(raw)
 
     except WebSocketDisconnect:
 
-        print("❌ pi disconnected")
+        add_log(
+            "ws",
+            "pi",
+            "disconnected"
+        )
 
     finally:
 
@@ -171,7 +316,11 @@ async def ws_browser(ws: WebSocket):
 
     await ws.accept()
 
-    print("🟢 browser connected")
+    add_log(
+        "ws",
+        "browser",
+        "connected"
+    )
 
     if browser_ws:
         await browser_ws.close()
@@ -184,14 +333,22 @@ async def ws_browser(ws: WebSocket):
 
             raw = await ws.receive_text()
 
-            print("📩 browser ->", raw[:50])
+            add_log(
+                "ws",
+                "browser",
+                f"message -> {raw[:50]}"
+            )
 
             if pi_ws:
                 await pi_ws.send_text(raw)
 
     except WebSocketDisconnect:
 
-        print("❌ browser disconnected")
+        add_log(
+            "ws",
+            "browser",
+            "disconnected"
+        )
 
     finally:
 
@@ -209,7 +366,11 @@ async def ws_ai(ws: WebSocket):
 
     await ws.accept()
 
-    print("🧠 ai connected")
+    add_log(
+        "ws",
+        "ai",
+        "connected"
+    )
 
     if ai_ws:
         await ai_ws.close()
@@ -222,14 +383,22 @@ async def ws_ai(ws: WebSocket):
 
             raw = await ws.receive_text()
 
-            print("📩 ai ->", raw)
+            add_log(
+                "ws",
+                "ai",
+                f"message -> {raw[:50]}"
+            )
 
             if pi_ws:
                 await pi_ws.send_text(raw)
 
     except WebSocketDisconnect:
 
-        print("❌ ai disconnected")
+        add_log(
+            "ws",
+            "ai",
+            "disconnected"
+        )
 
     finally:
 
