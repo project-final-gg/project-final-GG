@@ -43,7 +43,7 @@ pi_ws = None
 ai_ws = None
 
 esp32_status = {
-    "status": "offline"
+    "status": "online"
 }
 
 last_status_time = 0
@@ -95,7 +95,7 @@ async def safe_close(ws, name="ws"):
         add_log(
             "ws",
             name,
-            "closed"
+            "websocket closed"
         )
 
     except Exception as e:
@@ -140,7 +140,7 @@ def on_connect(client, userdata, flags, rc):
     add_log(
         "mqtt",
         "system",
-        "connected"
+        "connected to broker"
     )
 
     client.subscribe(MQTT_STATUS_TOPIC)
@@ -148,7 +148,7 @@ def on_connect(client, userdata, flags, rc):
     add_log(
         "mqtt",
         "system",
-        f"subscribed -> {MQTT_STATUS_TOPIC}"
+        f"subscribed to topic '{MQTT_STATUS_TOPIC}'"
     )
 
 
@@ -163,7 +163,7 @@ def on_message(client, userdata, msg):
     add_log(
         "mqtt",
         topic,
-        payload
+        f"received payload -> {payload}"
     )
 
     if topic == MQTT_STATUS_TOPIC:
@@ -175,7 +175,7 @@ def on_message(client, userdata, msg):
         add_log(
             "status",
             "esp32",
-            payload
+            f"device status changed to '{payload}'"
         )
 
 
@@ -218,9 +218,9 @@ def update_servo(cmd: ServoCommand):
     )
 
     add_log(
-        "command",
+        "servo",
         cmd.joint,
-        f"angle -> {cmd.angle}"
+        f"set servo angle to {cmd.angle}"
     )
 
     return {
@@ -239,7 +239,7 @@ def set_target(cmd: TargetCommand):
     add_log(
         "target",
         "ai",
-        cmd.target
+        f"new target selected -> {cmd.target}"
     )
 
     return {
@@ -270,6 +270,7 @@ def health():
         "ai_ws": ai_ws is not None,
     }
 
+
 # =====================================
 # STATUS
 # =====================================
@@ -278,7 +279,6 @@ def get_status():
 
     current_status = esp32_status["status"]
 
-    # timeout check
     if (
         time.time() - last_status_time
         > STATUS_TIMEOUT
@@ -288,6 +288,16 @@ def get_status():
     return {
         "esp32_status": current_status
     }
+
+
+# =====================================
+# LOGS
+# =====================================
+@app.get("/logs")
+def get_logs():
+
+    return logs
+
 
 # =====================================
 # PI SOCKET
@@ -302,7 +312,7 @@ async def ws_pi(ws: WebSocket):
     add_log(
         "ws",
         "pi",
-        "connected"
+        "raspberry pi websocket connected"
     )
 
     old_ws = pi_ws
@@ -310,7 +320,11 @@ async def ws_pi(ws: WebSocket):
     pi_ws = ws
 
     if old_ws and old_ws != ws:
-        await safe_close(old_ws, "old-pi")
+
+        await safe_close(
+            old_ws,
+            "old-pi"
+        )
 
     try:
 
@@ -321,7 +335,7 @@ async def ws_pi(ws: WebSocket):
             add_log(
                 "ws",
                 "pi",
-                raw[:50]
+                f"received websocket message -> {raw[:50]}"
             )
 
             await safe_send(
@@ -330,12 +344,18 @@ async def ws_pi(ws: WebSocket):
                 "browser"
             )
 
+            add_log(
+                "relay",
+                "pi->browser",
+                "forwarded websocket message"
+            )
+
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "pi",
-            "disconnect"
+            "raspberry pi websocket disconnected"
         )
 
     except Exception as e:
@@ -343,7 +363,7 @@ async def ws_pi(ws: WebSocket):
         add_log(
             "error",
             "pi",
-            str(e)
+            f"websocket error -> {e}"
         )
 
     finally:
@@ -365,7 +385,7 @@ async def ws_browser(ws: WebSocket):
     add_log(
         "ws",
         "browser",
-        "connected"
+        "browser websocket connected"
     )
 
     old_ws = browser_ws
@@ -373,6 +393,7 @@ async def ws_browser(ws: WebSocket):
     browser_ws = ws
 
     if old_ws and old_ws != ws:
+
         await safe_close(
             old_ws,
             "old-browser"
@@ -387,7 +408,7 @@ async def ws_browser(ws: WebSocket):
             add_log(
                 "ws",
                 "browser",
-                raw[:50]
+                f"received websocket message -> {raw[:50]}"
             )
 
             await safe_send(
@@ -396,12 +417,18 @@ async def ws_browser(ws: WebSocket):
                 "pi"
             )
 
+            add_log(
+                "relay",
+                "browser->pi",
+                "forwarded websocket message"
+            )
+
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "browser",
-            "disconnect"
+            "browser websocket disconnected"
         )
 
     except Exception as e:
@@ -409,7 +436,7 @@ async def ws_browser(ws: WebSocket):
         add_log(
             "error",
             "browser",
-            str(e)
+            f"websocket error -> {e}"
         )
 
     finally:
@@ -431,7 +458,7 @@ async def ws_ai(ws: WebSocket):
     add_log(
         "ws",
         "ai",
-        "connected"
+        "ai websocket connected"
     )
 
     old_ws = ai_ws
@@ -439,6 +466,7 @@ async def ws_ai(ws: WebSocket):
     ai_ws = ws
 
     if old_ws and old_ws != ws:
+
         await safe_close(
             old_ws,
             "old-ai"
@@ -453,7 +481,7 @@ async def ws_ai(ws: WebSocket):
             add_log(
                 "ws",
                 "ai",
-                raw[:50]
+                f"received ai websocket message -> {raw[:50]}"
             )
 
             await safe_send(
@@ -462,12 +490,18 @@ async def ws_ai(ws: WebSocket):
                 "pi"
             )
 
+            add_log(
+                "relay",
+                "ai->pi",
+                "forwarded ai command"
+            )
+
     except WebSocketDisconnect:
 
         add_log(
             "ws",
             "ai",
-            "disconnect"
+            "ai websocket disconnected"
         )
 
     except Exception as e:
@@ -475,7 +509,7 @@ async def ws_ai(ws: WebSocket):
         add_log(
             "error",
             "ai",
-            str(e)
+            f"websocket error -> {e}"
         )
 
     finally:
