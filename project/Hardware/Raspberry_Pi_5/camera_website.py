@@ -16,12 +16,12 @@ from aiortc import (
 from aiortc.contrib.media import MediaRelay
 from av import VideoFrame
 
-from ai_coral import AIEngine
-from camera import CameraManager
-from mqtt import RobotController
-from motions import RobotMotions
-from behavior import RobotBehavior
-from workspace import WorkspaceManager
+from project.Hardware.Raspberry_Pi_5.ai_coral import AIEngine
+from project.Hardware.Raspberry_Pi_5.camera import CameraManager
+from project.Hardware.Raspberry_Pi_5.mqtt import RobotController
+from project.Hardware.Raspberry_Pi_5.motions import RobotMotions
+from project.Hardware.Raspberry_Pi_5.behavior import RobotBehavior
+from project.Hardware.Raspberry_Pi_5.workspace import WorkspaceManager
 
 from check_resource import PerformanceMonitor
 

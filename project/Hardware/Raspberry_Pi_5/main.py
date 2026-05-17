@@ -1,12 +1,12 @@
 import cv2
 import time
 import os
-from camera import CameraManager
-from ai_coral import AIEngine 
-from mqtt import RobotController 
-from motions import RobotMotions  
-from behavior import RobotBehavior
-from workspace import WorkspaceManager  
+from project.Hardware.Raspberry_Pi_5.camera import CameraManager
+from project.Hardware.Raspberry_Pi_5.ai_coral import AIEngine 
+from project.Hardware.Raspberry_Pi_5.mqtt import RobotController 
+from project.Hardware.Raspberry_Pi_5.motions import RobotMotions  
+from project.Hardware.Raspberry_Pi_5.behavior import RobotBehavior
+from project.Hardware.Raspberry_Pi_5.workspace import WorkspaceManager  
 
 def main():
     ai = AIEngine(
